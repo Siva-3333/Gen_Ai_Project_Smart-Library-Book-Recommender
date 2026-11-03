@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} &mdash; Smart Library{% endblock %}
+
+{% block content %}
+<div class="container py-4 book-details-hero-stage">
+  <!-- Breadcrumbs Navigation Pill -->
+  <div class="breadcrumb-nav-pill">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('books.index') }}" class="text-decoration-none text-muted">
+            <i class="bi bi-house-door-fill text-success me-1"></i>Home
+          </a>
+        </li>
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('books.explore') }}" class="text-decoration-none text-muted">Catalog</a>
+        </li>
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('books.explore', category=book.category) }}" class="text-decoration-none text-muted">{{ book.category }}</a>
+        </li>
+        <li class="breadcrumb-item active text-truncate fw-bold text-body" aria-current="page" style="max-width: 320px;">
+          {{ book.title }}
+        </li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Book Main Overview Section -->
+  <div class="row g-5 mb-5 align-items-start">
+    <!-- Left Column: 3D Showcase Pod -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="book-showcase-pod text-center">
+        <!-- 3D Interactive Viewport with Luminous Aura -->
+        <div class="book-stage-viewport">
+          <span class="book-hologram-badge">
+            <i class="bi bi-patch-check-fill"></i> Verified Volume
+          </span>
+          <div class="book-cover-aura-glow"></div>
+          <img
+            src="{{ book.thumbnail }}"
+            alt="{{ book.title }}"
+            class="book-cover-hero-3d"
+            onerror="this.src='/static/images/default-book.svg'"
+          />
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="book-details-actions">
+          <!-- Add / Change Library Status Dropdown -->
+          <div class="dropdown mb-2">
+            <button
+              class="btn btn-add-shelf-hero w-100 dropdown-toggle {% if user_library_entry %}btn-outline-primary{% endif %}"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              {% if user_library_entry %}
+                {% if user_library_entry.readingStatus == 'currently_reading' %}
+                  <i class="bi bi-book-half text-warning me-2"></i>Status: Currently Reading
+                {% elif user_library_entry.readingStatus == 'completed' %}
+                  <i class="bi bi-check-circle-fill text-success me-2"></i>Status: Completed
+                {% else %}
+                  <i class="bi bi-hourglass-split text-info me-2"></i>Status: Want to Read
+                {% endif %}
+              {% else %}
+                <i class="bi bi-bookmark-plus-fill me-2"></i> Add to My Shelf
+              {% endif %}
+            </button>
+            <ul class="dropdown-menu w-100 shadow-lg border-0 py-2" style="background-color: var(--sl-bg-card); border-radius: var(--sl-radius-md);">
+              <li>
+                <a class="dropdown-item py-2 small fw-semibold" href="#" onclick="window.slAddToLibrary('{{ book.id }}', 'want_to_read'); return false;">
+                  <i class="bi bi-hourglass text-primary me-2"></i>Want to Read
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item py-2 small fw-semibold" href="#" onclick="window.slAddToLibrary('{{ book.id }}', 'currently_reading'); return false;">
+                  <i class="bi bi-book-half text-warning me-2"></i>Currently Reading
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item py-2 small fw-semibold" href="#" onclick="window.slAddToLibrary('{{ book.id }}', 'completed'); return false;">
+                  <i class="bi bi-check-circle-fill text-success me-2"></i>Completed
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Active Reading Progress Tracker Card -->
+          {% if user_library_entry and user_library_entry.readingStatus == 'currently_reading' %}
+          <div class="card p-3 mb-2 border-warning shadow-sm" style="background: rgba(245, 158, 11, 0.08); border-radius: var(--sl-radius-md); border: 1.5px solid rgba(245, 158, 11, 0.35);">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.74rem;">
+                <i class="bi bi-book-half me-1"></i> Reading in Progress
+              </span>
+              <span class="fw-bold text-warning-emphasis" style="font-size: 0.8rem;">
+                <span data-progress-percent="{{ book.id }}">{{ user_library_entry.progressPercent or 0 }}%</span>
+              </span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center small mb-1">
+              <span class="text-muted" style="font-size: 0.76rem;">
+                Page <strong class="text-primary fs-6" data-page-val="{{ book.id }}">{{ user_library_entry.currentPage or 0 }}</strong> of {{ user_library_entry.pageCount or book.page_count or 200 }}
+              </span>
+            </div>
+
+            <div class="progress mb-2" style="height: 7px; border-radius: 4px; background: rgba(0,0,0,0.1);">
+              <div
+                class="progress-bar bg-warning progress-bar-striped progress-bar-animated"
+                data-progress-bar="{{ book.id }}"
+                style="width: {{ user_library_entry.progressPercent or 0 }}%;"
+              ></div>
+            </div>
+
+            <div class="d-grid gap-1">
+              <button
+                type="button"
+                class="btn btn-warning btn-sm fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-1"
+                onclick="window.slIncrementPage('{{ book.id }}', event)"
+                title="Mark next page completed (+1)"
+              >
+                <i class="bi bi-check2-circle fs-6"></i> Mark Page Completed (+1)
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-1"
+                onclick="window.slOpenPageEditModal('{{ book.id }}', '{{ book.title | escape }}', {{ user_library_entry.currentPage or 0 }}, {{ user_library_entry.pageCount or book.page_count or 200 }})"
+                title="Edit Reading Page Number"
+              >
+                <i class="bi bi-pencil-square"></i> Edit Page Progress
+              </button>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Read Book Here / In-App Digital Reader -->
+          <a href="{{ url_for('books.book_reader', book_id=book.id) }}" class="btn btn-read-primary-hero w-100 my-2">
+            <i class="bi bi-book-half me-2"></i> Read Book Here
+          </a>
+
+          <div class="reader-viewability-pill mb-2 text-center">
+            {% if book.viewability == 'ALL_PAGES' %}
+            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle py-1 px-2 rounded-pill small w-100">
+              <i class="bi bi-patch-check-fill me-1"></i> Full Volume (100% Pages)
+            </span>
+            {% elif book.viewability == 'PARTIAL' %}
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle py-1 px-2 rounded-pill small w-100">
+              <i class="bi bi-book me-1"></i> Interactive Preview Pages
+            </span>
+            {% else %}
+            <span class="badge bg-secondary bg-opacity-10 text-muted border py-1 px-2 rounded-pill small w-100">
+              <i class="bi bi-file-earmark-pdf me-1"></i> In-App PDF Studio
+            </span>
+            {% endif %}
+          </div>
+
+          {% if book.preview_link %}
+          <a href="{{ book.preview_link }}" target="_blank" rel="noopener" class="btn btn-preview-hero w-100">
+            <i class="bi bi-book me-2 text-primary"></i> Read Google Preview
+          </a>
+          {% endif %}
+
+          {% set official_store_url = ('https://books.google.com/books?id=' ~ book.id) if (not book.info_link or 'play.google.com' in book.info_link) else book.info_link %}
+          <a href="{{ official_store_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-store-hero w-100">
+            <i class="bi bi-box-arrow-up-right me-1 text-primary"></i> Official Google Books Store
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Editorial Typography & Information -->
+    <div class="col-lg-8 col-xl-9">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="book-category-tag mb-0">{{ book.category }}</span>
+        {% if book.page_count and book.page_count != 'Unknown' %}
+        <span class="badge bg-secondary bg-opacity-10 text-body border" style="font-size: 0.74rem;">
+          <i class="bi bi-file-earmark-text me-1 text-primary"></i>{{ book.page_count }} Pages
+        </span>
+        {% endif %}
+      </div>
+
+      <h1 class="book-detail-title">{{ book.title }}</h1>
+      {% if book.subtitle %}
+      <h4 class="book-detail-subtitle">{{ book.subtitle }}</h4>
+      {% endif %}
+
+      <div class="book-author-badge">
+        <i class="bi bi-pen-fill"></i>
+        <span>Author: <strong>{{ book.authors_str }}</strong></span>
+      </div>
+
+      <!-- Rating Hero Banner -->
+      <div class="book-rating-banner">
+        <div class="star-rating-score">
+          <i class="bi bi-star-fill"></i>
+          <span>{% if average_rating > 0 %}{{ average_rating }}{% elif book.rating %}{{ book.rating }}{% else %}4.5{% endif %}</span>
+          <span class="text-muted fw-normal" style="font-size: 0.95rem;">/ 5.0</span>
+        </div>
+        <div class="vr d-none d-sm-block"></div>
+        <div class="d-flex flex-column">
+          <span class="fw-bold small text-body">
+            <i class="bi bi-chat-heart-fill text-danger me-1"></i>{{ total_reviews }} Community Review{{ 's' if total_reviews != 1 }}
+          </span>
+          <span class="text-muted" style="font-size: 0.78rem;">Reader verified ratings &amp; feedback</span>
+        </div>
+        {% if book.ratings_count %}
+        <div class="vr d-none d-md-block"></div>
+        <div class="d-flex flex-column">
+          <span class="fw-bold small text-body">
+            <i class="bi bi-patch-check-fill text-primary me-1"></i>{{ book.ratings_count }} Google Books Ratings
+          </span>
+          <span class="text-muted" style="font-size: 0.78rem;">Global publication metadata</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Specs Matrix Grid (6 Responsive Tiles) -->
+      <div class="specs-matrix-grid">
+        <div class="spec-tile">
+          <div class="spec-tile-header"><i class="bi bi-buildings-fill"></i> Publisher</div>
+          <span class="spec-tile-value" title="{{ book.publisher }}">{{ book.publisher or 'Independent Publisher' }}</span>
+        </div>
+        <div class="spec-tile">
+          <div class="spec-tile-header"><i class="bi bi-calendar-event-fill"></i> Published Date</div>
+          <span class="spec-tile-value">{{ book.published_date or 'Recent Edition' }}</span>
+        </div>
+        <div class="spec-tile">
+          <div class="spec-tile-header"><i class="bi bi-journal-bookmark-fill"></i> Page Count</div>
+          <span class="spec-tile-value">{{ book.page_count or 'Complete Volume' }}</span>
+        </div>
+        <div class="spec-tile">
+          <div class="spec-tile-header"><i class="bi bi-translate"></i> Language</div>
+          <span class="spec-tile-value">{{ (book.language or 'EN') | upper }} Edition</span>
+        </div>
+        <div class="spec-tile">
+          <div class="spec-tile-header"><i class="bi bi-upc-scan"></i> ISBN-10</div>
+          <span class="spec-tile-value">{{ book.isbn_10 or 'Available Digitally' }}</span>
+        </div>
+        <div class="spec-tile">
+          <div class="spec-tile-header"><i class="bi bi-barcode"></i> ISBN-13</div>
+          <span class="spec-tile-value">{{ book.isbn_13 or 'Digital Catalog' }}</span>
+        </div>
+      </div>
+
+      <!-- Categories & Disciplines Cloud -->
+      {% if book.categories %}
+      <div class="mb-4">
+        <h6 class="fw-bold small text-uppercase text-muted mb-2" style="letter-spacing: 0.05em;">Curated Disciplines &amp; Subjects</h6>
+        <div class="categories-cloud">
+          {% for c in book.categories %}
+          <a href="{{ url_for('books.explore', category=c) }}" class="category-cloud-pill">
+            <i class="bi bi-tag-fill"></i>{{ c }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Synopsis Card -->
+      <div class="book-synopsis-pod mb-4">
+        <h5><i class="bi bi-blockquote-left"></i> About this Volume</h5>
+        <div class="book-synopsis-text">
+          {% if book.description and book.description != 'Not available' %}
+            {{ book.description | safe }}
+          {% else %}
+            <p class="fst-italic text-muted mb-0">Verified publication available in the library collection with complete metadata. Read Google Preview or check library catalog for full chapters.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- In-App Interactive Digital Reader Showcase -->
+      <div class="reader-showcase-card p-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-1 fw-bold small">
+                <i class="bi bi-display me-1"></i> In-App Digital Reader Studio
+              </span>
+              {% if book.viewability == 'ALL_PAGES' %}
+              <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-2 py-1 small fw-semibold">
+                <i class="bi bi-check-circle-fill me-1"></i> 100% All Pages
+              </span>
+              {% elif book.viewability == 'PARTIAL' %}
+              <span class="badge rounded-pill bg-info bg-opacity-10 text-info px-2 py-1 small fw-semibold">
+                <i class="bi bi-book-half me-1"></i> Preview Edition
+              </span>
+              {% endif %}
+            </div>
+            <h4 class="fw-bold mb-1">Read Book Pages Directly Inside the App</h4>
+            <p class="text-muted small mb-0">
+              Flip through pages, zoom text, switch to night mode, or open full PDF with automatic reading progress memory.
+            </p>
+          </div>
+          <div class="d-flex gap-2 flex-shrink-0">
+            <a href="{{ url_for('books.book_reader', book_id=book.id) }}" class="btn btn-primary-sl px-4 py-2">
+              <i class="bi bi-book-half me-2"></i> Launch Reader Studio
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       COMMUNITY RATINGS & REVIEWS SECTION
+       ==================================================================== -->
+  <section class="py-5 border-top" style="border-color: var(--sl-border) !important;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <span class="section-tagline"><i class="bi bi-chat-quote-fill text-success me-1"></i>Reader Feedback</span>
+        <h3 class="section-headline">Community Reviews</h3>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Write Review Form -->
+      <div class="col-lg-5">
+        <div class="review-form-card">
+          <h5 class="fw-bold mb-3"><i class="bi bi-pencil-square text-primary me-2"></i>Write a Review</h5>
+
+          {% if current_user %}
+          <form id="book-review-form" data-book-id="{{ book.id }}">
+            <!-- Star Rating Selector -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted text-uppercase" style="letter-spacing: 0.05em;">Your Rating Score</label>
+              <div class="star-rating-selector">
+                {% for star in [1, 2, 3, 4, 5] %}
+                <div class="form-check form-check-inline m-0">
+                  <input class="btn-check" type="radio" name="rating" id="star-{{ star }}" value="{{ star }}" {% if star == 5 %}checked{% endif %}>
+                  <label class="btn star-check-btn" for="star-{{ star }}">
+                    {{ star }} <i class="bi bi-star-fill"></i>
+                  </label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Review Textarea -->
+            <div class="mb-3">
+              <label for="review-text" class="form-label small fw-bold text-muted text-uppercase" style="letter-spacing: 0.05em;">Your Reader Insights</label>
+              <textarea
+                class="form-control"
+                id="review-text"
+                rows="4"
+                placeholder="What did you learn? How were the clarity, depth, and practical concepts?"
+                required
+              ></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary-sl w-100 py-2 fw-bold" id="submit-review-btn">
+              <i class="bi bi-send-fill me-1"></i> Publish Review
+            </button>
+          </form>
+          {% else %}
+          <div class="text-center py-4">
+            <i class="bi bi-lock-fill text-primary display-4 mb-3 d-block opacity-75"></i>
+            <h6 class="fw-bold mb-1">Reader Community Login</h6>
+            <p class="text-muted small mb-3">Please sign in to share your verified review and evaluation.</p>
+            <a href="{{ url_for('auth.login_page', next='/book/' + book.id) }}" class="btn btn-primary-sl btn-sm px-4">
+              <i class="bi bi-person-fill me-1"></i> Sign In to Review
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Reviews Feed List -->
+      <div class="col-lg-7">
+        {% if reviews %}
+        <div class="d-flex flex-column gap-3">
+          {% for r in reviews %}
+          <div class="review-item-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="d-flex align-items-center gap-3">
+                <img
+                  src="https://api.dicebear.com/7.x/initials/svg?seed={{ r.userName }}"
+                  alt="{{ r.userName }}"
+                  class="rounded-circle shadow-xs"
+                  width="40"
+                  height="40"
+                />
+                <div>
+                  <strong class="d-block text-body" style="font-size: 0.92rem;">{{ r.userName }}</strong>
+                  <span class="text-muted" style="font-size: 0.74rem;">
+                    <i class="bi bi-clock me-1"></i>{{ r.updatedAt[:10] if r.updatedAt else '' }}
+                  </span>
+                </div>
+              </div>
+              <div class="text-warning" style="font-size: 0.85rem;">
+                {% for s in range(r.rating) %}
+                <i class="bi bi-star-fill"></i>
+                {% endfor %}
+                {% for s in range(5 - r.rating) %}
+                <i class="bi bi-star text-muted opacity-50"></i>
+                {% endfor %}
+              </div>
+            </div>
+
+            <p class="text-muted small mb-2" style="white-space: pre-line; line-height: 1.65;">{{ r.reviewText }}</p>
+
+            {% if current_user and current_user.uid == r.uid %}
+            <div class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger py-1 px-3 small rounded-pill"
+                style="font-size: 0.74rem;"
+                onclick="window.slDeleteReview('{{ book.id }}')"
+              >
+                <i class="bi bi-trash me-1"></i>Delete Review
+              </button>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="card p-5 text-center border-0 shadow-sm" style="background-color: var(--sl-bg-card); border-radius: var(--sl-radius-lg); border: 1.5px solid var(--sl-border) !important;">
+          <i class="bi bi-chat-square-quote display-3 text-success opacity-50 mb-3"></i>
+          <h5 class="fw-bold">No community reviews yet</h5>
+          <p class="text-muted small mb-0">Be the first reader to share your insights on this volume!</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================================
+       RELATED BOOKS IN THE SAME DISCIPLINE
+       ==================================================================== -->
+  {% if related_books %}
+  <section class="py-5 border-top" style="border-color: var(--sl-border) !important;">
+    <div class="mb-4">
+      <span class="section-tagline"><i class="bi bi-collection-fill text-primary me-1"></i>More in this Field</span>
+      <h3 class="section-headline">Related Books in {{ book.category }}</h3>
+    </div>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-3">
+      {% for rel in related_books %}
+      <div class="col">
+        <div class="book-card-v2 h-100">
+          <div class="book-card-cover-stage" style="height: 190px;">
+            <a href="{{ url_for('books.book_details', book_id=rel.id) }}">
+              <img
+                src="{{ rel.thumbnail }}"
+                alt="{{ rel.title }}"
+                class="book-cover-3d"
+                style="max-height: 165px;"
+                loading="lazy"
+                onerror="this.src='/static/images/default-book.svg'"
+              />
+            </a>
+          </div>
+          <div class="book-card-content p-3">
+            <h6 class="continue-card-title" title="{{ rel.title }}">
+              <a href="{{ url_for('books.book_details', book_id=rel.id) }}" class="text-decoration-none text-reset">
+                {{ rel.title }}
+              </a>
+            </h6>
+            <div class="continue-card-author">{{ rel.authors_str or 'Verified Author' }}</div>
+            <a href="{{ url_for('books.book_details', book_id=rel.id) }}" class="btn btn-secondary-sl btn-sm w-100 justify-content-center mt-auto">
+              <i class="bi bi-eye me-1"></i>View Book
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/books.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,568 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Library &mdash; Discover Books That Match Your Mind{% endblock %}
+
+{% block content %}
+<!-- ======================================================================
+     HERO V2: ULTRA-MODERN DISCOVERY STAGE
+     ====================================================================== -->
+<section class="hero-v2 hero-greenery text-center">
+  <!-- Layered Animated Botanical Trees Stage (Crisp HD - No Blur) -->
+  <div class="greenery-stage" aria-hidden="true">
+    <div class="greenery-forest-photo"></div>
+    <div class="greenery-sunbeam-rays"></div>
+    <div class="greenery-mist-ambience"></div>
+    <div class="greenery-vignette-overlay"></div>
+    
+    <!-- Floating Botanical Foliage & Leaf Particles -->
+    <div class="greenery-leaves-wrap">
+      <span class="green-leaf leaf-1"></span>
+      <span class="green-leaf leaf-2"></span>
+      <span class="green-leaf leaf-3"></span>
+      <span class="green-leaf leaf-4"></span>
+      <span class="green-leaf leaf-5"></span>
+      <span class="green-leaf leaf-6"></span>
+      <span class="green-leaf leaf-7"></span>
+      <span class="green-leaf leaf-8"></span>
+      <span class="green-leaf leaf-9"></span>
+    </div>
+
+    <!-- Glowing Luminous Forest Fireflies & Spores -->
+    <div class="forest-fireflies-wrap">
+      <span class="forest-firefly firefly-1"></span>
+      <span class="forest-firefly firefly-2"></span>
+      <span class="forest-firefly firefly-3"></span>
+      <span class="forest-firefly firefly-4"></span>
+      <span class="forest-firefly firefly-5"></span>
+      <span class="forest-firefly firefly-6"></span>
+      <span class="forest-firefly firefly-7"></span>
+      <span class="forest-firefly firefly-8"></span>
+    </div>
+
+    <!-- Center Stage Radial Luminous Contrast Aura (Guarantees Razor-Sharp Text Readability) -->
+    <div class="greenery-radial-aura"></div>
+  </div>
+
+  <div class="container position-relative" style="z-index: 2;">
+    <!-- Headline Badge -->
+    <div class="hero-badge-pill mx-auto">
+      <i class="bi bi-stars text-warning fs-6"></i>
+      <span>Next-Generation Book Discovery &bull; Sentence Transformers &amp; FAISS RAG</span>
+    </div>
+
+    <!-- Main Heading -->
+    <h1 class="hero-title">
+      Discover Books That <br />
+      <span class="text-gradient">Match Your Mind.</span>
+    </h1>
+
+    <!-- Subtitle -->
+    <p class="hero-lead mx-auto" style="max-width: 720px;">
+      Explore millions of volumes with intelligent, multi-factor recommendations
+      calibrated to your specific learning goals, reading levels, and intellectual curiosity.
+    </p>
+
+    <!-- Smart Natural-Language Search Island -->
+    <div class="smart-search-container">
+      <form action="{{ url_for('recommendations.recommendations_page') }}" method="GET" id="hero-search-form">
+        <div class="smart-search-bar">
+          <i class="bi bi-magic search-icon-sparkle"></i>
+          <input
+            type="text"
+            name="q"
+            id="hero-search-input"
+            class="smart-search-input"
+            placeholder="Tell us what you want to learn or explore today..."
+            aria-label="Book search query"
+            autocomplete="off"
+            required
+          />
+          <span class="search-shortcut-badge d-none d-md-inline">Prompt</span>
+          <button type="submit" class="btn btn-primary-sl px-4 py-2">
+            <i class="bi bi-stars"></i>
+            <span>Recommend</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Quick Inspiration Prompt Chips -->
+    <div class="prompt-chips-wrap mx-auto" style="max-width: 900px;">
+      <span class="prompt-chips-label align-self-center me-1">
+        <i class="bi bi-lightbulb-fill text-warning me-1"></i>Try asking:
+      </span>
+      <a href="{{ url_for('recommendations.recommendations_page', q='I want to learn Python from beginner to advanced') }}" class="prompt-chip">
+        <i class="bi bi-arrow-right-short text-success"></i>Python from beginner to advanced
+      </a>
+      <a href="{{ url_for('recommendations.recommendations_page', q='Recommend books about Artificial Intelligence and Deep Learning') }}" class="prompt-chip">
+        <i class="bi bi-arrow-right-short text-success"></i>AI &amp; Deep Learning
+      </a>
+      <a href="{{ url_for('recommendations.recommendations_page', q='I like psychological mystery and thriller novels with twists') }}" class="prompt-chip">
+        <i class="bi bi-arrow-right-short text-success"></i>Psychological thriller novels
+      </a>
+      <a href="{{ url_for('recommendations.recommendations_page', q='Suggest books for Machine Learning with Python') }}" class="prompt-chip">
+        <i class="bi bi-arrow-right-short text-success"></i>Machine Learning practical guides
+      </a>
+      <a href="{{ url_for('recommendations.recommendations_page', q='I want motivational and productivity books for university students') }}" class="prompt-chip">
+        <i class="bi bi-arrow-right-short text-success"></i>Student productivity &amp; habits
+      </a>
+    </div>
+
+    <!-- Trust / Feature Badges Strip (Crystal Clear Badges) -->
+    <div class="hero-trust-strip d-flex flex-wrap justify-content-center align-items-center gap-3 mt-5 pt-3">
+      <div class="hero-trust-badge">
+        <i class="bi bi-patch-check-fill text-primary fs-5"></i>
+        <span><strong>100% Genuine Data</strong> via Google Books API</span>
+      </div>
+      <div class="hero-trust-badge">
+        <i class="bi bi-cpu-fill text-success fs-5"></i>
+        <span><strong>Sentence Transformers &amp; FAISS</strong> RAG Engine</span>
+      </div>
+      <div class="hero-trust-badge">
+        <i class="bi bi-shield-lock-fill text-info fs-5"></i>
+        <span><strong>Private Library</strong> on Firebase Cloud</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     CONTINUE READING (Appears when authenticated user has active books)
+     ====================================================================== -->
+{% if continue_reading %}
+<section class="py-5" style="background-color: var(--sl-bg-subtle);">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <span class="section-tagline"><i class="bi bi-bookmark-check-fill text-warning me-1"></i>Active Shelf</span>
+        <h3 class="section-headline">Continue Reading</h3>
+      </div>
+      <a href="{{ url_for('library.my_library_page', status='currently_reading') }}" class="btn btn-secondary-sl btn-sm">
+        View All Shelf <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+      {% for book in continue_reading %}
+      <div class="col">
+        <div class="book-card-v2 continue-card-item h-100">
+          <div class="card-accent-bar continue-accent-bar"></div>
+          <div class="book-card-cover-stage continue-cover-stage">
+            <a href="{{ url_for('books.book_details', book_id=book.googleBookId) }}">
+              <img
+                src="{{ book.bookThumbnail or url_for('static', filename='images/default-book.svg') }}"
+                alt="{{ book.bookTitle }}"
+                class="book-cover-3d continue-cover-img"
+                loading="lazy"
+                onerror="this.src='/static/images/default-book.svg'"
+              />
+            </a>
+          </div>
+          <div class="book-card-content continue-card-content">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge bg-warning bg-opacity-25 text-warning-emphasis continue-status-pill">
+                <span class="continue-pulse-dot"></span> Reading
+              </span>
+              <span class="small fw-bold text-muted" style="font-size: 0.72rem;">
+                <span data-progress-percent="{{ book.googleBookId }}">{{ book.progressPercent or 0 }}%</span>
+              </span>
+            </div>
+
+            <h6 class="continue-card-title mb-1" title="{{ book.bookTitle }}">
+              <a href="{{ url_for('books.book_details', book_id=book.googleBookId) }}" class="text-decoration-none text-reset">
+                {{ book.bookTitle }}
+              </a>
+            </h6>
+            <div class="continue-card-author mb-2">
+              {{ book.bookAuthors | join(', ') if book.bookAuthors else 'Verified Author' }}
+            </div>
+
+            <!-- Page Reading Progress Bar & Counter -->
+            <div class="mt-auto mb-2 pt-1">
+              <div class="d-flex justify-content-between align-items-center small mb-1" style="font-size: 0.74rem;">
+                <span>Page <strong class="text-primary" data-page-val="{{ book.googleBookId }}">{{ book.currentPage or 0 }}</strong> of {{ book.pageCount or 200 }}</span>
+                <button
+                  type="button"
+                  class="btn btn-link p-0 text-muted text-decoration-none"
+                  style="font-size: 0.72rem;"
+                  onclick="window.slOpenPageEditModal('{{ book.googleBookId }}', '{{ book.bookTitle | escape }}', {{ book.currentPage or 0 }}, {{ book.pageCount or 200 }})"
+                  title="Edit Page"
+                >
+                  <i class="bi bi-pencil-square text-primary"></i> Edit
+                </button>
+              </div>
+              <div class="progress" style="height: 5px; border-radius: 3px; background: rgba(0,0,0,0.08);">
+                <div
+                  class="progress-bar bg-warning progress-bar-striped"
+                  data-progress-bar="{{ book.googleBookId }}"
+                  style="width: {{ book.progressPercent or 0 }}%;"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Action Controls Row -->
+            <div class="d-flex gap-1">
+              <button
+                type="button"
+                class="btn btn-warning btn-sm flex-grow-1 fw-bold py-1"
+                style="font-size: 0.75rem;"
+                onclick="window.slIncrementPage('{{ book.googleBookId }}', event)"
+                title="Mark next page completed (+1)"
+              >
+                <i class="bi bi-check2-circle me-1"></i>+1 Page
+              </button>
+              <a href="{{ url_for('books.book_reader', book_id=book.googleBookId) }}" class="btn btn-primary-sl btn-sm px-2 py-1" style="font-size: 0.75rem;" title="Read Book">
+                <i class="bi bi-book"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ======================================================================
+     SECTION 1: TRENDING BOOKS (Crisp Greenery Botanical Showcase)
+     ====================================================================== -->
+<section class="py-5 section-trending-greenery position-relative">
+  <!-- Crisp Unblurred Greenery Nature Backdrop -->
+  <div class="trending-greenery-backdrop" aria-hidden="true"></div>
+
+  <div class="container position-relative" style="z-index: 2;">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <span class="section-tagline"><i class="bi bi-tree-fill text-success me-1"></i>Curated Picks</span>
+        <h2 class="section-headline">Trending Across the Library</h2>
+      </div>
+      <a href="{{ url_for('books.explore', sort='relevance') }}" class="btn btn-secondary-sl btn-sm">
+        View Complete Catalog <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+      {% for book in trending_books %}
+      {% set theme_idx = (loop.index0 % 6) + 1 %}
+      <div class="col">
+        <div class="book-card-v2 book-card-theme-{{ theme_idx }}">
+          <!-- Top Accent Color Bar -->
+          <div class="card-accent-bar"></div>
+
+          <!-- Shimmer Shine Sweep -->
+          <div class="card-shimmer-sweep"></div>
+
+          <!-- Bookmark Action Ribbon -->
+          <button
+            type="button"
+            class="bookmark-badge"
+            title="Add to My Library"
+            onclick="window.slAddToLibrary('{{ book.id }}', 'want_to_read')"
+            data-lib-btn="{{ book.id }}"
+          >
+            <i class="bi bi-bookmark-plus"></i>
+          </button>
+
+          <!-- 3D Book Cover Stage -->
+          <div class="book-card-cover-stage">
+            <a href="{{ url_for('books.book_details', book_id=book.id) }}">
+              <img
+                src="{{ book.thumbnail }}"
+                alt="{{ book.title }}"
+                class="book-cover-3d"
+                loading="lazy"
+                onerror="this.src='/static/images/default-book.svg'"
+              />
+            </a>
+          </div>
+
+          <!-- Body Content -->
+          <div class="book-card-content">
+            <span class="book-category-tag">{{ book.category or 'Curated' }}</span>
+            <h5 class="book-card-title" title="{{ book.title }}">
+              <a href="{{ url_for('books.book_details', book_id=book.id) }}" class="text-decoration-none text-reset">
+                {{ book.title }}
+              </a>
+            </h5>
+            <div class="book-card-author">{{ book.authors_str or 'Verified Author' }}</div>
+            <p class="book-card-desc">{{ book.description or "Verified publication curated in the library catalog with comprehensive metadata." }}</p>
+
+            <div class="book-card-actions mt-auto d-flex gap-2 pt-2 border-top" style="border-color: var(--sl-border-subtle) !important;">
+              <a href="{{ url_for('books.book_details', book_id=book.id) }}" class="btn btn-secondary-sl btn-sm flex-grow-1">
+                <i class="bi bi-info-circle me-1"></i>Details
+              </a>
+              <button
+                type="button"
+                class="btn btn-primary-sl btn-card-action btn-sm"
+                onclick="window.slAddToLibrary('{{ book.id }}', 'want_to_read')"
+                title="Add to My Shelf"
+              >
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     SECTION 2: DISCIPLINE EXPLORER (School & Academic Hall Theme)
+     ====================================================================== -->
+<section class="py-5 section-disciplines-school position-relative">
+  <!-- School & Academic Hall Backdrop -->
+  <div class="disciplines-school-backdrop" aria-hidden="true"></div>
+
+  <div class="container position-relative" style="z-index: 2;">
+    <div class="text-center mb-5">
+      <span class="section-tagline"><i class="bi bi-mortarboard-fill me-1 text-primary"></i>Academic &amp; School Campus Disciplines</span>
+      <h2 class="section-headline">Explore Curated Disciplines</h2>
+      <p class="text-muted small mx-auto mt-2" style="max-width: 540px;">
+        Browse verified academic volumes categorized across science, engineering, school curricula, and literature.
+      </p>
+    </div>
+
+    <!-- Category Visual Matrix -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+      {% set category_meta = {
+        'Programming': {'icon': 'bi-code-slash', 'theme': 'cat-emerald', 'emoji': '💻'},
+        'Artificial Intelligence': {'icon': 'bi-cpu-fill', 'theme': 'cat-violet', 'emoji': '🤖'},
+        'Machine Learning': {'icon': 'bi-diagram-3-fill', 'theme': 'cat-indigo', 'emoji': '🧠'},
+        'Data Science': {'icon': 'bi-bar-chart-line-fill', 'theme': 'cat-cyan', 'emoji': '📊'},
+        'Science': {'icon': 'bi-atom', 'theme': 'cat-fuchsia', 'emoji': '🔬'},
+        'Technology': {'icon': 'bi-hdd-network-fill', 'theme': 'cat-blue', 'emoji': '⚙️'},
+        'Fiction': {'icon': 'bi-book-half', 'theme': 'cat-orange', 'emoji': '📖'},
+        'Mystery': {'icon': 'bi-search-heart', 'theme': 'cat-slate', 'emoji': '🕵️'},
+        'Thriller': {'icon': 'bi-lightning-charge-fill', 'theme': 'cat-red', 'emoji': '⚡'},
+        'History': {'icon': 'bi-hourglass-split', 'theme': 'cat-amber', 'emoji': '🏛️'},
+        'Business': {'icon': 'bi-briefcase-fill', 'theme': 'cat-teal', 'emoji': '💼'},
+        'Self-help': {'icon': 'bi-trophy-fill', 'theme': 'cat-yellow', 'emoji': '🏆'},
+        'Biography': {'icon': 'bi-person-badge-fill', 'theme': 'cat-rose', 'emoji': '👤'},
+        'Education': {'icon': 'bi-mortarboard-fill', 'theme': 'cat-sky', 'emoji': '🎓'}
+      } %}
+
+      {% for cat in all_categories %}
+      {% set meta = category_meta.get(cat, {'icon': 'bi-folder2-open', 'theme': 'cat-blue', 'emoji': '📚'}) %}
+      <div class="col">
+        <a href="{{ url_for('books.explore', category=cat) }}" class="category-card-v2 {{ meta.theme }}">
+          <!-- Subtle Shimmer Light Sweep -->
+          <span class="category-shimmer"></span>
+
+          <!-- Category Left Accent Color Bar -->
+          <span class="category-color-bar"></span>
+
+          <!-- Themed Icon Bubble with Small Emoji -->
+          <div class="category-icon-bubble">
+            <i class="bi {{ meta.icon }}"></i>
+            <span class="category-mini-emoji" title="{{ cat }}">{{ meta.emoji }}</span>
+          </div>
+
+          <!-- Text Information with Emoji Badge -->
+          <div class="category-text-wrap">
+            <div class="category-card-title d-flex align-items-center justify-content-between">
+              <span>{{ cat }}</span>
+              <span class="category-badge-emoji">{{ meta.emoji }}</span>
+            </div>
+            <div class="category-card-subtitle">
+              <span>Explore Volumes</span>
+              <i class="bi bi-arrow-right"></i>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     SECTION 3: AI SPOTLIGHT BANNER
+     ====================================================================== -->
+<section class="py-5">
+  <div class="container">
+    <div class="spotlight-card">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+          <span class="badge bg-warning text-dark fw-bold px-3 py-2 rounded-pill mb-3">
+            <i class="bi bi-magic me-1"></i> Multi-Factor Weighted Scoring
+          </span>
+          <h2 class="display-6 fw-bold mb-3">Tired of Generic Book Lists?</h2>
+          <p class="lead opacity-90 mb-4" style="max-width: 580px;">
+            Unlike standard keyword searches, our Python recommendation engine parses your natural language input,
+            detects your learning level and purpose, and calculates a 5-dimension weighted match score using TF-IDF cosine similarity.
+          </p>
+          <div class="d-flex flex-wrap gap-3">
+            <a href="{{ url_for('recommendations.recommendations_page') }}" class="btn btn-warning fw-bold px-4 py-2 rounded-pill">
+              <i class="bi bi-stars me-1"></i> Open AI Recommender
+            </a>
+            {% if not current_user %}
+            <a href="{{ url_for('auth.register_page') }}" class="btn btn-outline-light fw-bold px-4 py-2 rounded-pill">
+              Create Free Account
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <!-- Interactive Mockup Score Breakdown Badge -->
+          <div class="glass-panel p-4 rounded-4 text-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="fw-bold small text-uppercase" style="letter-spacing: 0.05em;">Scoring Formula Breakdown</div>
+              <span class="badge bg-success">100% Weighted</span>
+            </div>
+            <div class="small mb-2 d-flex justify-content-between">
+              <span>Subject Relevance</span>
+              <strong class="text-primary-emphasis">35% Weight</strong>
+            </div>
+            <div class="progress mb-3" style="height: 6px; background: rgba(255,255,255,0.1);">
+              <div class="progress-bar bg-primary" style="width: 35%;"></div>
+            </div>
+
+            <div class="small mb-2 d-flex justify-content-between">
+              <span>Category Matching</span>
+              <strong class="text-info">25% Weight</strong>
+            </div>
+            <div class="progress mb-3" style="height: 6px; background: rgba(255,255,255,0.1);">
+              <div class="progress-bar bg-info" style="width: 25%;"></div>
+            </div>
+
+            <div class="small mb-2 d-flex justify-content-between">
+              <span>User Preferences Alignment</span>
+              <strong class="text-warning">20% Weight</strong>
+            </div>
+            <div class="progress mb-3" style="height: 6px; background: rgba(255,255,255,0.1);">
+              <div class="progress-bar bg-warning" style="width: 20%;"></div>
+            </div>
+
+            <div class="small mb-2 d-flex justify-content-between">
+              <span>Reading Level Matching</span>
+              <strong class="text-success">10% Weight</strong>
+            </div>
+            <div class="progress mb-3" style="height: 6px; background: rgba(255,255,255,0.1);">
+              <div class="progress-bar bg-success" style="width: 10%;"></div>
+            </div>
+
+            <div class="small mb-2 d-flex justify-content-between">
+              <span>Description Content Similarity</span>
+              <strong class="text-secondary">10% Weight</strong>
+            </div>
+            <div class="progress" style="height: 6px; background: rgba(255,255,255,0.1);">
+              <div class="progress-bar bg-secondary" style="width: 10%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     SECTION 4: POPULAR IN TECH & AI (Futuristic Cyber Neural Showcase)
+     ====================================================================== -->
+<section class="py-5 section-tech-ai-stage position-relative">
+  <!-- Cyber Circuit & Neural Network Backdrop Layer -->
+  <div class="tech-stage-backdrop" aria-hidden="true"></div>
+  <div class="tech-grid-mesh" aria-hidden="true"></div>
+
+  <div class="container position-relative" style="z-index: 2;">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <span class="section-tagline"><i class="bi bi-cpu-fill text-info me-1"></i>Next-Gen Intelligence</span>
+        <h2 class="section-headline">Popular in Technology &amp; AI</h2>
+      </div>
+      <a href="{{ url_for('books.explore', category='Technology') }}" class="btn btn-secondary-sl btn-tech-catalog-btn btn-sm">
+        Explore Cyber Catalog <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+      {% for book in popular_books %}
+      {% set tech_idx = (loop.index0 % 6) + 1 %}
+      {% set tech_badges = [
+        {'name': 'Neural AI', 'icon': 'bi-cpu-fill'},
+        {'name': 'Deep Learning', 'icon': 'bi-robot'},
+        {'name': 'Algorithm', 'icon': 'bi-diagram-3-fill'},
+        {'name': 'Quantum Tech', 'icon': 'bi-lightning-charge-fill'},
+        {'name': 'Generative AI', 'icon': 'bi-stars'},
+        {'name': 'Cloud System', 'icon': 'bi-hdd-network-fill'}
+      ] %}
+      {% set current_badge = tech_badges[loop.index0 % 6] %}
+      <div class="col">
+        <div class="tech-card-pod tech-theme-{{ tech_idx }}">
+          <!-- Glowing Cyber Accent Header Line -->
+          <div class="tech-card-accent-line"></div>
+
+          <!-- Futuristic Laser Scanline (Sweeps on Hover) -->
+          <div class="tech-holo-scanner"></div>
+
+          <!-- Futuristic AI Chip Beacon Badge -->
+          <div class="tech-chip-badge">
+            <span class="chip-pulse-beacon"></span>
+            <i class="bi {{ current_badge.icon }} me-1"></i>
+            <span>{{ current_badge.name }}</span>
+          </div>
+
+          <!-- Bookmark Action Ribbon -->
+          <button
+            type="button"
+            class="bookmark-badge tech-bookmark-btn"
+            title="Add to My Library"
+            onclick="window.slAddToLibrary('{{ book.id }}', 'want_to_read')"
+            data-lib-btn="{{ book.id }}"
+          >
+            <i class="bi bi-bookmark-plus"></i>
+          </button>
+
+          <!-- 3D Book Cover Stage with HUD Corner Brackets -->
+          <div class="book-card-cover-stage tech-cover-stage">
+            <span class="tech-hud-corner corner-tl"></span>
+            <span class="tech-hud-corner corner-tr"></span>
+            <span class="tech-hud-corner corner-bl"></span>
+            <span class="tech-hud-corner corner-br"></span>
+
+            <a href="{{ url_for('books.book_details', book_id=book.id) }}">
+              <img
+                src="{{ book.thumbnail }}"
+                alt="{{ book.title }}"
+                class="book-cover-3d"
+                loading="lazy"
+                onerror="this.src='/static/images/default-book.svg'"
+              />
+            </a>
+          </div>
+
+          <!-- Body Content -->
+          <div class="book-card-content tech-content-area">
+            <span class="book-category-tag tech-category-pill">{{ book.category or 'Technology' }}</span>
+            <h5 class="book-card-title tech-title" title="{{ book.title }}">
+              <a href="{{ url_for('books.book_details', book_id=book.id) }}" class="text-decoration-none text-reset">
+                {{ book.title }}
+              </a>
+            </h5>
+            <div class="book-card-author tech-author">{{ book.authors_str or 'Verified Author' }}</div>
+            <p class="book-card-desc tech-desc">{{ book.description or "Verified volume covering computational sciences, programming paradigms, and modern AI algorithms." }}</p>
+
+            <div class="tech-card-actions mt-auto d-flex gap-2 pt-2 border-top" style="border-color: var(--sl-border-subtle) !important;">
+              <a href="{{ url_for('books.book_details', book_id=book.id) }}" class="btn btn-secondary-sl tech-btn-details btn-sm flex-grow-1">
+                <i class="bi bi-terminal-fill me-1"></i>Details
+              </a>
+              <button
+                type="button"
+                class="btn btn-primary-sl tech-btn-add btn-sm"
+                onclick="window.slAddToLibrary('{{ book.id }}', 'want_to_read')"
+                title="Add to My Library"
+              >
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

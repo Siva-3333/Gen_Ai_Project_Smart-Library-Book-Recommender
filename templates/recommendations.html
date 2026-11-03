@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}AI Recommendations &mdash; Smart Library{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <!-- Header Banner -->
+  <div class="text-center mb-4">
+    <div class="hero-badge-pill mx-auto mb-3">
+      <i class="bi bi-cpu-fill text-primary"></i>
+      <span>Sentence Transformers (all-MiniLM-L6-v2) &bull; FAISS &bull; Grounded RAG</span>
+    </div>
+    <h1 class="display-5 fw-bold mb-3">Intelligent Book Recommendations</h1>
+    <p class="lead text-muted mx-auto" style="max-width: 720px;">
+      State your learning objective, current experience level, or specific interests.
+      Our Hybrid AI Engine combines Sentence Transformer embeddings, FAISS vector indexing, and multi-factor weighted scoring.
+    </p>
+
+    <!-- AI Feature Mode Switcher -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+      <button type="button" class="btn btn-primary-sl rounded-pill px-4 py-2" id="nav-btn-recommender">
+        <i class="bi bi-stars me-1"></i> Hybrid Recommender
+      </button>
+      <button type="button" class="btn btn-outline-primary rounded-pill px-4 py-2" id="nav-btn-assistant">
+        <i class="bi bi-robot me-1"></i> AI Book Discovery Assistant
+      </button>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       VIEW 1: HYBRID RECOMMENDER & SEMANTIC SEARCH VIEW
+       ==================================================================== -->
+  <div id="recommender-view-container">
+    <!-- Query Input Form -->
+    <div class="smart-search-container mb-4">
+      <form id="recommendation-form" action="{{ url_for('recommendations.recommendations_page') }}" method="GET">
+        <div class="smart-search-bar">
+          <i class="bi bi-chat-left-dots search-icon-sparkle"></i>
+          <input
+            type="text"
+            id="rec-query-input"
+            name="q"
+            class="smart-search-input"
+            placeholder="e.g. I want to become a Python developer or learn Artificial Intelligence..."
+            value="{{ query }}"
+            required
+            autocomplete="off"
+          />
+          <button type="submit" class="btn btn-primary-sl px-4 py-2" id="rec-submit-btn">
+            <i class="bi bi-stars"></i>
+            <span>Recommend</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Suggested Sample Prompts -->
+    <div class="prompt-chips-wrap mx-auto mb-4" style="max-width: 860px;">
+      {% for sample in sample_queries %}
+      <button
+        type="button"
+        class="sample-query-pill prompt-chip"
+        data-query="{{ sample }}"
+      >
+        <i class="bi bi-lightbulb-fill text-warning"></i>
+        <span>{{ sample }}</span>
+      </button>
+      {% endfor %}
+    </div>
+
+    <!-- Real-time / Injected NLP Query Analysis Card -->
+    <div id="query-analysis-container" class="{% if not results %}d-none{% endif %} mb-4">
+      {% if results and results.query_analysis %}
+      <div class="glass-card p-4" style="border-radius: var(--sl-radius-lg);">
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-cpu-fill text-primary me-2 fs-5"></i>
+          <h5 class="mb-0 fw-bold">Natural Language Query Analysis</h5>
+        </div>
+        <div class="row g-3 text-muted small">
+          <div class="col-6 col-md-3">
+            <span class="d-block text-secondary fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Target Subject</span>
+            <span class="badge bg-primary text-white fs-6 mt-1 px-3 py-1 rounded-pill">{{ results.query_analysis.subject }}</span>
+          </div>
+          <div class="col-6 col-md-3">
+            <span class="d-block text-secondary fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Domain Category</span>
+            <span class="badge bg-info text-dark fs-6 mt-1 px-3 py-1 rounded-pill">{{ results.query_analysis.category }}</span>
+          </div>
+          <div class="col-6 col-md-3">
+            <span class="d-block text-secondary fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Detected Level</span>
+            <span class="badge bg-warning text-dark fs-6 mt-1 px-3 py-1 rounded-pill">{{ results.query_analysis.reading_level }}</span>
+          </div>
+          <div class="col-6 col-md-3">
+            <span class="d-block text-secondary fw-bold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">Learning Purpose</span>
+            <span class="badge bg-secondary text-white fs-6 mt-1 px-3 py-1 rounded-pill">{{ results.query_analysis.purpose }}</span>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recommendation Results Grid -->
+    <div class="row g-4" id="recommendations-grid">
+      {% if results and results.recommendations %}
+        {% for book in results.recommendations %}
+        <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+          <div class="book-card-v2">
+            <!-- Recommendation Match Score Pill -->
+            <span class="rec-score-pill-v2">
+              <i class="bi bi-lightning-charge-fill"></i>{{ book.recommendation_score }}% Match
+            </span>
+
+            <!-- Bookmark Action Ribbon -->
+            <button
+              type="button"
+              class="bookmark-badge"
+              title="Add to My Shelf"
+              onclick="window.slAddToLibrary('{{ book.id }}', 'want_to_read')"
+              data-lib-btn="{{ book.id }}"
+            >
+              <i class="bi bi-bookmark-plus"></i>
+            </button>
+
+            <!-- 3D Book Cover Stage -->
+            <div class="book-card-cover-stage">
+              <a href="{{ url_for('books.book_details', book_id=book.id) }}">
+                <img
+                  src="{{ book.thumbnail }}"
+                  alt="{{ book.title }}"
+                  class="book-cover-3d"
+                  loading="lazy"
+                  onerror="this.src='/static/images/default-book.svg'"
+                />
+              </a>
+            </div>
+
+            <!-- Body Content -->
+            <div class="book-card-content">
+              <span class="book-category-tag">{{ book.category or 'Recommendation' }}</span>
+              <h5 class="book-card-title" title="{{ book.title }}">
+                <a href="{{ url_for('books.book_details', book_id=book.id) }}" class="text-decoration-none text-reset">
+                  {{ book.title }}
+                </a>
+              </h5>
+              <div class="book-card-author">{{ book.authors_str or 'Verified Author' }}</div>
+
+              <!-- Recommendation Reason Pill -->
+              <div class="rec-reason-box p-2 mb-3 rounded border small text-muted" style="background-color: var(--sl-bg-subtle); border-color: var(--sl-border-subtle) !important;">
+                <i class="bi bi-info-circle-fill text-primary me-1"></i>
+                {{ book.recommendation_reason or 'Recommended based on semantic and multi-factor hybrid scoring.' }}
+              </div>
+
+              <!-- Weighted Score Accordion / Collapsible (Exact 35/25/15/15/10 Weights) -->
+              <details class="mb-3 score-breakdown-card">
+                <summary class="text-muted small fw-semibold cursor-pointer" style="cursor: pointer;">
+                  View Hybrid Factors (35/25/15/15/10)
+                </summary>
+                <div class="pt-2">
+                  <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                    <span>Semantic Similarity (35%)</span>
+                    <strong>{{ book.score_breakdown.semantic_similarity }}%</strong>
+                  </div>
+                  <div class="progress mb-2" style="height: 4px;">
+                    <div class="progress-bar bg-primary" style="width: {{ book.score_breakdown.semantic_similarity }}%;"></div>
+                  </div>
+
+                  <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                    <span>Subject Relevance (25%)</span>
+                    <strong>{{ book.score_breakdown.subject_relevance }}%</strong>
+                  </div>
+                  <div class="progress mb-2" style="height: 4px;">
+                    <div class="progress-bar bg-info" style="width: {{ book.score_breakdown.subject_relevance }}%;"></div>
+                  </div>
+
+                  <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                    <span>Category Match (15%)</span>
+                    <strong>{{ book.score_breakdown.category_matching }}%</strong>
+                  </div>
+                  <div class="progress mb-2" style="height: 4px;">
+                    <div class="progress-bar bg-warning" style="width: {{ book.score_breakdown.category_matching }}%;"></div>
+                  </div>
+
+                  <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                    <span>User Preferences (15%)</span>
+                    <strong>{{ book.score_breakdown.user_preference }}%</strong>
+                  </div>
+                  <div class="progress mb-2" style="height: 4px;">
+                    <div class="progress-bar bg-success" style="width: {{ book.score_breakdown.user_preference }}%;"></div>
+                  </div>
+
+                  <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                    <span>Reading Level (10%)</span>
+                    <strong>{{ book.score_breakdown.reading_level }}%</strong>
+                  </div>
+                  <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-secondary" style="width: {{ book.score_breakdown.reading_level }}%;"></div>
+                  </div>
+                </div>
+              </details>
+
+              <div class="book-card-actions mt-auto d-flex gap-2 pt-2 border-top" style="border-color: var(--sl-border-subtle) !important;">
+                <a href="{{ url_for('books.book_details', book_id=book.id) }}" class="btn btn-secondary-sl btn-sm flex-grow-1">
+                  <i class="bi bi-info-circle me-1"></i>Details
+                </a>
+                <button
+                  type="button"
+                  class="btn btn-primary-sl btn-card-action btn-sm"
+                  onclick="window.slAddToLibrary('{{ book.id }}', 'want_to_read')"
+                  title="Save to Library"
+                >
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% elif not query %}
+        <div class="col-12 text-center py-5">
+          <i class="bi bi-stars display-1 text-primary opacity-50 mb-3"></i>
+          <h4 class="fw-bold">Ready to generate recommendations</h4>
+          <p class="text-muted" style="max-width: 500px; margin: 0 auto;">
+            Enter any query above or click on one of the sample prompts to test the recommendation engine.
+          </p>
+        </div>
+      {% else %}
+        <div class="col-12 text-center py-5">
+          <i class="bi bi-search display-3 text-muted mb-3"></i>
+          <h4>No matching books found</h4>
+          <p class="text-muted">Try rephrasing your search or using broader terms.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       VIEW 2: CONVERSATIONAL AI BOOK DISCOVERY ASSISTANT (RAG + OLLAMA)
+       ==================================================================== -->
+  <div id="assistant-view-container" class="d-none">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="glass-card shadow-sm p-3 p-md-4 mb-4" style="border-radius: var(--sl-radius-lg);">
+          <!-- Assistant Top Header Bar -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pb-3 border-bottom mb-3" style="border-color: var(--sl-border-subtle) !important;">
+            <div class="d-flex align-items-center gap-3">
+              <div class="icon-circle bg-primary text-white d-flex align-items-center justify-content-center rounded-circle" style="width: 44px; height: 44px;">
+                <i class="bi bi-robot fs-4"></i>
+              </div>
+              <div>
+                <h5 class="fw-bold mb-0">AI Book Discovery Assistant</h5>
+                <small class="text-muted">Conversational Natural Language &bull; Multi-Turn Context Memory &bull; Grounded RAG</small>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill">
+                <i class="bi bi-dot"></i> Live RAG Active
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" id="btn-reset-chat" title="Clear Chat History">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Discovery Starters -->
+          <div class="mb-3">
+            <span class="small fw-bold text-muted d-block mb-1">
+              <i class="bi bi-lightbulb-fill text-warning me-1"></i>Try asking:
+            </span>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm btn-outline-primary rounded-pill assistant-quick-prompt" data-text="I want to learn Artificial Intelligence">
+                I want to learn Artificial Intelligence
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary rounded-pill assistant-quick-prompt" data-text="Show me beginner-level books">
+                Show me beginner-level books
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary rounded-pill assistant-quick-prompt" data-text="I want to become a Python developer">
+                I want to become a Python developer
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary rounded-pill assistant-quick-prompt" data-text="Suggest practical machine learning books with projects">
+                Practical machine learning with projects
+              </button>
+            </div>
+          </div>
+
+          <!-- Chat Conversation Log Window -->
+          <div id="assistant-chat-stream" class="p-3 rounded-4 mb-3" style="max-height: 580px; overflow-y: auto; background-color: var(--sl-bg-subtle); border: 1px solid var(--sl-border-subtle);">
+            <!-- Welcoming Initial Message -->
+            <div class="d-flex gap-2 mb-3">
+              <div class="text-primary fs-4 flex-shrink-0"><i class="bi bi-robot"></i></div>
+              <div class="p-3 rounded-3 shadow-sm" style="max-width: 85%; background: var(--sl-bg-card); border: 1px solid var(--sl-border);">
+                <div class="fw-semibold text-body mb-1">AI Discovery Assistant</div>
+                <div class="small text-muted" style="line-height: 1.5;">
+                  Hello! I am your AI Book Discovery Assistant, powered by <strong>Sentence Transformers (all-MiniLM-L6-v2)</strong>, <strong>FAISS</strong>, and <strong>Google Books Cloud</strong>.
+                  <br /><br />
+                  Tell me what you'd like to study, learn, or explore (e.g. <em>"I want to become a Python developer"</em> or <em>"Show me beginner books on AI"</em>). I retrieve genuine volumes and explain their relevance using semantic search!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input Bar -->
+          <form id="assistant-chat-form" class="d-flex gap-2">
+            <input
+              type="text"
+              id="assistant-chat-input"
+              class="form-control rounded-pill px-4"
+              placeholder="Type your book request or ask a follow-up question (e.g., 'Show me beginner books')..."
+              required
+              autocomplete="off"
+            />
+            <button type="submit" class="btn btn-primary-sl rounded-pill px-4" id="assistant-chat-submit">
+              <i class="bi bi-send-fill me-1"></i> Send
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/recommendations.js') }}"></script>
+{% endblock %}

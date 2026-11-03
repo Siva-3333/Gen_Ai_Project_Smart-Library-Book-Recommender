@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account &mdash; Smart Library Book Recommender{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="auth-canvas-container">
+  <!-- ====================================================================
+       CINEMATIC LIVING ARCHITECTURE PHOTOGRAPHY & FLOATING SHOWCASE ENGINE
+       ==================================================================== -->
+  <!-- Layer 1: Living Architecture Slideshow (Ken Burns Zoom & Crossfade) -->
+  <div class="auth-bg-carousel" aria-hidden="true">
+    <div class="auth-bg-slide slide-1"></div>
+    <div class="auth-bg-slide slide-2"></div>
+    <div class="auth-bg-slide slide-3"></div>
+    <div class="auth-bg-slide slide-4"></div>
+  </div>
+
+  <!-- Layer 2: Frosted Glass Vignette Overlay -->
+  <div class="auth-bg-overlay" aria-hidden="true"></div>
+
+  <!-- Layer 3: Ambient Luminescent Light Orbs -->
+  <div class="auth-ambient-orbs" aria-hidden="true">
+    <div class="auth-ambient-orb orb-1"></div>
+    <div class="auth-ambient-orb orb-2"></div>
+    <div class="auth-ambient-orb orb-3"></div>
+  </div>
+
+  <!-- ====================================================================
+       CENTER STAGE: REGISTRATION CARD
+       ==================================================================== -->
+  <div class="auth-center-stage">
+    <!-- Registration Box -->
+    <div class="auth-box-wrapper">
+      <div class="auth-card-modern">
+        <!-- Top Animated Light Beam -->
+        <div class="auth-card-beam"></div>
+
+        <!-- Compact Header -->
+        <div class="text-center mb-3">
+          <div class="auth-header-icon-wrap mx-auto">
+            <i class="bi bi-person-plus-fill"></i>
+          </div>
+          <h1 class="auth-title-modern">Create Account</h1>
+          <p class="auth-subtitle-modern">Start your smart reading journey</p>
+        </div>
+
+        <!-- Error / Status Alert Box -->
+        <div id="auth-alert" class="alert d-none mb-2 py-2 small" role="alert"></div>
+
+        <!-- Registration Form -->
+        <form id="register-form">
+          <!-- Full Name Field -->
+          <div class="mb-2">
+            <label for="reg-name" class="auth-label-modern">
+              <i class="bi bi-person-fill me-1" style="color: #0D9488;"></i> Full Name
+            </label>
+            <div class="auth-field-group">
+              <span class="auth-field-icon">
+                <i class="bi bi-person"></i>
+              </span>
+              <input
+                type="text"
+                class="auth-input-modern"
+                id="reg-name"
+                required
+                autocomplete="name"
+              />
+            </div>
+          </div>
+
+          <!-- Email Address Field -->
+          <div class="mb-2">
+            <label for="reg-email" class="auth-label-modern">
+              <i class="bi bi-envelope-fill me-1" style="color: #0D9488;"></i> Email Address
+            </label>
+            <div class="auth-field-group">
+              <span class="auth-field-icon">
+                <i class="bi bi-at"></i>
+              </span>
+              <input
+                type="email"
+                class="auth-input-modern"
+                id="reg-email"
+                required
+                autocomplete="email"
+              />
+            </div>
+          </div>
+
+          <!-- Passwords in 2 Columns -->
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label for="reg-password" class="auth-label-modern">
+                <i class="bi bi-key-fill me-1" style="color: #0D9488;"></i> Password
+              </label>
+              <div class="auth-field-group">
+                <span class="auth-field-icon">
+                  <i class="bi bi-lock-fill"></i>
+                </span>
+                <input
+                  type="password"
+                  class="auth-input-modern"
+                  id="reg-password"
+                  placeholder="&ge; 6 chars"
+                  required
+                  autocomplete="new-password"
+                />
+                <button type="button" class="toggle-password-btn" data-target="reg-password" title="Show/Hide">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <label for="reg-confirm-password" class="auth-label-modern">
+                <i class="bi bi-shield-check me-1" style="color: #0D9488;"></i> Confirm
+              </label>
+              <div class="auth-field-group">
+                <span class="auth-field-icon">
+                  <i class="bi bi-lock-fill"></i>
+                </span>
+                <input
+                  type="password"
+                  class="auth-input-modern"
+                  id="reg-confirm-password"
+                  placeholder="Repeat"
+                  required
+                  autocomplete="new-password"
+                />
+                <button type="button" class="toggle-password-btn" data-target="reg-confirm-password" title="Show/Hide">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn-auth-submit mt-1 mb-2" id="register-submit-btn">
+            <i class="bi bi-person-plus-fill"></i> Create Account
+          </button>
+
+          <!-- Divider -->
+          <div class="auth-divider-modern">
+            <span>or</span>
+          </div>
+
+          <!-- Google Button -->
+          <button type="button" class="btn-auth-google btn-google-auth mb-2" id="btn-google-login">
+            <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true">
+              <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/>
+              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+              <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z"/>
+              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <!-- Sign In Link -->
+          <div class="text-center small text-muted pt-1" style="font-size: 0.8rem;">
+            Already have an account?
+            <a href="{{ url_for('auth.login_page') }}" class="fw-bold text-decoration-none ms-1" style="color: #0D9488;">
+              Sign In
+            </a>
+          </div>
+
+          <!-- Trust Security Badge -->
+          <div class="auth-trust-badge">
+            <i class="bi bi-shield-check"></i>
+            <span>256-Bit SSL Encrypted &bull; Firebase Protected</span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

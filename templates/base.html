@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Smart Library &mdash; Intelligent Book Discovery{% endblock %}</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5.3.3 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+
+  <!-- Bootstrap Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+  />
+
+  <!-- App Design System Stylesheets -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}" />
+  {% block extra_css %}{% endblock %}
+
+  <!-- Immediate Theme State Loader (Prevents flash) -->
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</head>
+<body>
+
+<!-- ======================================================================
+     TOP NAVIGATION BAR (Ultra-Modern Glassmorphic Header)
+     ====================================================================== -->
+<nav class="navbar navbar-expand-lg navbar-custom">
+  <div class="container">
+    <!-- Brand Logo -->
+    <a class="navbar-brand d-flex align-items-center me-4" href="{{ url_for('books.index') }}">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Smart Library" class="navbar-brand-logo" />
+    </a>
+
+    <!-- Mobile Hamburger Toggle Button -->
+    <button
+      class="navbar-toggler border-0 p-1 shadow-none"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#slNavbarContent"
+      aria-controls="slNavbarContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <i class="bi bi-list fs-1 text-primary"></i>
+    </button>
+
+    <!-- Nav Items & Action Triggers -->
+    <div class="collapse navbar-collapse" id="slNavbarContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
+        <li class="nav-item">
+          <a class="nav-link-custom nav-link-home {% if request.endpoint == 'books.index' %}active{% endif %}" href="{{ url_for('books.index') }}">
+            <i class="bi bi-house-door-fill"></i> Home
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link-custom nav-link-explore {% if request.endpoint == 'books.explore' %}active{% endif %}" href="{{ url_for('books.explore') }}">
+            <i class="bi bi-compass-fill"></i> Explore Books
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link-custom nav-link-ai {% if request.endpoint == 'recommendations.recommendations_page' %}active{% endif %}" href="{{ url_for('recommendations.recommendations_page') }}">
+            <i class="bi bi-stars"></i> AI Recommender
+          </a>
+        </li>
+        {% if current_user %}
+        <li class="nav-item">
+          <a class="nav-link-custom nav-link-library {% if request.endpoint == 'library.my_library_page' %}active{% endif %}" href="{{ url_for('library.my_library_page') }}">
+            <i class="bi bi-bookmark-heart-fill"></i> My Library
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link-custom nav-link-history {% if request.endpoint == 'history.history_page' %}active{% endif %}" href="{{ url_for('history.history_page') }}">
+            <i class="bi bi-clock-history"></i> History
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+
+      <!-- Right Side Actions: Theme Switcher & User Profile -->
+      <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+        <!-- Dark / Light Mode Switcher -->
+        <button
+          type="button"
+          class="theme-toggle-btn"
+          id="theme-toggle-btn"
+          title="Toggle Theme"
+          aria-label="Toggle Dark and Light Mode"
+        >
+          <span class="theme-toggle-track">
+            <span class="theme-toggle-thumb">
+              <i class="bi bi-moon-stars-fill" id="theme-toggle-icon"></i>
+            </span>
+          </span>
+          <span class="theme-toggle-halo"></span>
+        </button>
+
+        {% if current_user %}
+        <!-- User Profile Dropdown -->
+        {% set user_disp_name = current_user.get('displayName') or current_user.get('name') or current_user.get('email', 'Reader') if current_user.get is defined else (current_user.displayName or current_user.name or 'Reader') %}
+        {% set user_prof_img = current_user.get('profileImage') if current_user.get is defined else current_user.profileImage %}
+        <div class="dropdown ms-1">
+          <a
+            class="d-flex align-items-center gap-2 text-decoration-none dropdown-toggle p-1 rounded-pill pe-3 border"
+            style="background: var(--sl-bg-card); border-color: var(--sl-border) !important;"
+            href="#"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <img
+              src="{{ user_prof_img or ('https://api.dicebear.com/7.x/initials/svg?seed=' ~ user_disp_name) }}"
+              alt="{{ user_disp_name }}"
+              class="rounded-circle shadow-xs"
+              width="32"
+              height="32"
+            />
+            <span class="d-none d-md-inline fw-bold small text-truncate" style="max-width: 120px; color: var(--sl-text);">
+              {{ user_disp_name }}
+            </span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 py-2 mt-2" style="background-color: var(--sl-bg-card); min-width: 220px; border-radius: var(--sl-radius-md);">
+            <li class="px-3 py-2 border-bottom mb-1" style="border-color: var(--sl-border) !important;">
+              <span class="d-block fw-bold small text-truncate" style="color: var(--sl-text);">{{ user_disp_name }}</span>
+              <span class="d-block text-muted small text-truncate">{{ current_user.get('email') if current_user.get is defined else (current_user.email or '') }}</span>
+            </li>
+            <li>
+              <a class="dropdown-item py-2 small fw-semibold" href="{{ url_for('profile.dashboard_page') }}">
+                <i class="bi bi-grid-fill text-primary me-2"></i>Personal Dashboard
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item py-2 small fw-semibold" href="{{ url_for('library.my_library_page') }}">
+                <i class="bi bi-book-half text-success me-2"></i>My Digital Shelf
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item py-2 small fw-semibold" href="{{ url_for('profile.preferences_page') }}">
+                <i class="bi bi-sliders text-info me-2"></i>Reading Preferences
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item py-2 small fw-semibold" href="{{ url_for('profile.profile_page') }}">
+                <i class="bi bi-person-circle text-secondary me-2"></i>Account Profile
+              </a>
+            </li>
+            <li><hr class="dropdown-divider my-1" style="border-color: var(--sl-border);"></li>
+            <li>
+              <a class="dropdown-item py-2 small fw-semibold text-danger" href="{{ url_for('auth.logout_page') }}">
+                <i class="bi bi-box-arrow-right me-2"></i>Sign Out
+              </a>
+            </li>
+          </ul>
+        </div>
+        {% else %}
+        <!-- Guest User CTA -->
+        <a href="{{ url_for('auth.login_page') }}" class="btn-signin-nav">
+          <i class="bi bi-box-arrow-in-right btn-signin-icon"></i>
+          <span class="btn-signin-text">Sign In</span>
+          <span class="btn-signin-shimmer"></span>
+        </a>
+        <a href="{{ url_for('auth.register_page') }}" class="btn btn-sm btn-primary-sl">
+          Get Started <i class="bi bi-arrow-right"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Page Content Placeholder -->
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ======================================================================
+     RE-IMAGINED FOOTER (Modern SaaS Digital Library + Attribute Animations)
+     ====================================================================== -->
+<footer class="footer-v2">
+  <div class="container">
+    <div class="row g-4 justify-content-between mb-4">
+      <!-- Col 1: Platform Summary & Tech Attributes -->
+      <div class="col-lg-4">
+        <p class="small text-muted mb-3" style="max-width: 340px;">
+          An intelligent book discovery platform powered by natural language processing and
+          weighted multi-factor recommendations for students, researchers, and book lovers.
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="footer-tech-badge footer-badge-google" title="Connected to Google Books Volume Cloud">
+            <i class="bi bi-patch-check-fill me-1"></i> Google Books API
+          </span>
+          <span class="footer-tech-badge footer-badge-firestore" title="Real-time NoSQL User Library Sync">
+            <i class="bi bi-fire me-1"></i> Cloud Firestore
+          </span>
+          <span class="footer-tech-badge footer-badge-python" title="NLP TF-IDF Cosine Similarity Engine">
+            <i class="bi bi-cpu-fill me-1"></i> Python NLP &bull; Scikit-Learn
+          </span>
+        </div>
+      </div>
+
+      <!-- Col 2: Platform Navigation Attributes -->
+      <div class="col-6 col-md-3 col-lg-2">
+        <div class="footer-col-header">
+          <i class="bi bi-grid-fill" style="color: #0D9488;"></i>
+          <span>Platform</span>
+        </div>
+        <ul class="list-unstyled mb-0 footer-link-list">
+          <li>
+            <a href="{{ url_for('books.index') }}" class="footer-link footer-attr-home">
+              <i class="bi bi-house-door-fill"></i> <span>Home Portal</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('books.explore') }}" class="footer-link footer-attr-explore">
+              <i class="bi bi-compass-fill"></i> <span>Explore Catalog</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('recommendations.recommendations_page') }}" class="footer-link footer-attr-ai">
+              <i class="bi bi-stars"></i> <span>AI Recommender</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('profile.dashboard_page') }}" class="footer-link footer-attr-shelf">
+              <i class="bi bi-bookmark-heart-fill"></i> <span>Personal Shelf</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Col 3: Academic Disciplines Attributes -->
+      <div class="col-6 col-md-3 col-lg-2">
+        <div class="footer-col-header">
+          <i class="bi bi-mortarboard-fill" style="color: #8B5CF6;"></i>
+          <span>Disciplines</span>
+        </div>
+        <ul class="list-unstyled mb-0 footer-link-list">
+          <li>
+            <a href="{{ url_for('books.explore', category='Programming') }}" class="footer-link footer-attr-prog">
+              <i class="bi bi-code-slash"></i> <span>Programming</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('books.explore', category='Artificial Intelligence') }}" class="footer-link footer-attr-ai-disc">
+              <i class="bi bi-cpu-fill"></i> <span>Artificial Intelligence</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('books.explore', category='Data Science') }}" class="footer-link footer-attr-data">
+              <i class="bi bi-bar-chart-line-fill"></i> <span>Data Science</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('books.explore', category='Business') }}" class="footer-link footer-attr-business">
+              <i class="bi bi-briefcase-fill"></i> <span>Business &amp; Finance</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Final-Year Showcase Glassmorphic Box -->
+      <div class="col-md-5 col-lg-3">
+        <div class="footer-showcase-box">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="footer-col-header mb-0">
+              <i class="bi bi-award-fill" style="color: #F59E0B;"></i>
+              <span>Final-Year Showcase</span>
+            </div>
+            <span class="footer-live-pill">
+              <span class="footer-pulse-dot"></span> 2026
+            </span>
+          </div>
+          <p class="small text-muted mb-3" style="font-size: 0.82rem; line-height: 1.45;">
+            Developed as a high-performance Python full-stack demonstration combining Scikit-Learn TF-IDF modeling and Firebase Authentication.
+          </p>
+          <div class="footer-academic-meta">
+            <i class="bi bi-mortarboard-fill me-1" style="color: #0D9488;"></i>
+            <span>Computer Science Engineering Project</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Copyright & Security Strip -->
+    <div class="footer-bottom-strip pt-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small text-muted" style="border-color: var(--sl-border) !important;">
+      <div>&copy; 2026. All rights reserved.</div>
+      <div class="d-flex align-items-center gap-3">
+        <span class="footer-partner-link">
+          Powered by <a href="https://books.google.com" target="_blank" rel="noopener" class="footer-attr-google">Google Books API</a>
+        </span>
+        <span class="footer-bullet">&bull;</span>
+        <span class="footer-partner-link">
+          Secured with <a href="https://firebase.google.com" target="_blank" rel="noopener" class="footer-attr-firebase">Firebase Cloud</a>
+        </span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Interactive Reading Progress Modal -->
+<div class="modal fade" id="sl-edit-page-modal" tabindex="-1" aria-labelledby="editPageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="background-color: var(--sl-bg-card); border-radius: var(--sl-radius-lg);">
+      <div class="modal-header border-bottom py-3" style="border-color: var(--sl-border-subtle) !important;">
+        <div class="d-flex align-items-center gap-2">
+          <div class="rounded-circle p-2 bg-warning bg-opacity-10 text-warning">
+            <i class="bi bi-bookmark-check-fill fs-5"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0" id="editPageModalLabel">Update Reading Progress</h5>
+            <div class="text-muted small text-truncate" style="max-width: 320px;" id="edit-modal-book-title">Book Title</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-4">
+        <input type="hidden" id="edit-modal-book-id" value="" />
+
+        <div class="text-center mb-4">
+          <label class="form-label small fw-bold text-muted text-uppercase mb-2" style="letter-spacing: 0.05em;">
+            Completed Page Number
+          </label>
+          <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+            <span class="fs-4 fw-bold text-muted">Page</span>
+            <input
+              type="number"
+              id="edit-modal-page-input"
+              class="form-control text-center fs-2 fw-bold text-primary"
+              style="width: 130px; border-radius: var(--sl-radius-md); border: 2px solid var(--sl-primary);"
+              min="0"
+              value="0"
+            />
+            <span class="fs-4 fw-bold text-muted">of <span id="edit-modal-total-pages">200</span></span>
+          </div>
+
+          <!-- Quick Increment Buttons -->
+          <div class="d-flex justify-content-center gap-1 mt-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2" onclick="window.slQuickAdjustModalPage(1)">+1 Page</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2" onclick="window.slQuickAdjustModalPage(5)">+5 Pages</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2" onclick="window.slQuickAdjustModalPage(10)">+10 Pages</button>
+            <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-2" onclick="window.slQuickAdjustModalPage(25)">+25 Pages</button>
+          </div>
+        </div>
+
+        <!-- Dynamic Progress Bar Preview -->
+        <div class="p-3 rounded mb-2" style="background: var(--sl-bg-subtle);">
+          <div class="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
+            <span>Overall Completion:</span>
+            <span class="text-warning-emphasis fw-bold" id="edit-modal-pct-label">0%</span>
+          </div>
+          <div class="progress" style="height: 8px; border-radius: 4px; background: rgba(0,0,0,0.1);">
+            <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" id="edit-modal-progress-bar" role="progressbar" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top py-2" style="border-color: var(--sl-border-subtle) !important;">
+        <button type="button" class="btn btn-secondary-sl btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary-sl btn-sm px-4 fw-bold" id="edit-modal-save-btn">
+          <i class="bi bi-check-lg me-1"></i> Save Progress
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notifications Container -->
+<div id="sl-toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1095;"></div>
+
+<!-- Injected Safe Firebase Config -->
+<script>
+  window.FIREBASE_CONFIG = {{ firebase_client_config | tojson }};
+</script>
+
+<!-- Bootstrap 5.3.3 JS Bundle -->
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+  crossorigin="anonymous"
+></script>
+
+<!-- Firebase Client Compat SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- Modular Script Suites -->
+<script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/library.js') }}"></script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

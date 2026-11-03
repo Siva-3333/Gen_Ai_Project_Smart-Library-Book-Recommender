@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} – Geni AI{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('main.index') }}">Home</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">Book Detail</li>
+  </ol>
+</nav>
+
+<div class="row g-5">
+  <!-- Cover -->
+  <div class="col-md-3 text-center">
+    {% if book.thumbnail %}
+    <img
+      src="{{ book.thumbnail | replace('http:', 'https:') }}"
+      alt="{{ book.title }}"
+      class="img-fluid rounded shadow book-detail-thumb"
+    />
+    {% else %}
+    <div
+      class="book-thumb-placeholder d-flex align-items-center justify-content-center bg-secondary rounded"
+      style="height: 300px;"
+    >
+      <i class="bi bi-book text-muted" style="font-size: 4rem;"></i>
+    </div>
+    {% endif %}
+
+    <!-- Action buttons -->
+    <div class="d-grid gap-2 mt-3">
+      {% if book.preview_link %}
+      <a href="{{ book.preview_link }}" target="_blank" class="btn btn-primary">
+        <i class="bi bi-eye me-1"></i> Preview on Google Books
+      </a>
+      {% endif %}
+      <button
+        class="btn btn-outline-warning fav-btn"
+        data-book-id="{{ book.id }}"
+        id="fav-btn-detail"
+      >
+        <i class="bi bi-bookmark me-1"></i> Save to Favourites
+      </button>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="col-md-9">
+    <h1 class="h2 fw-bold">{{ book.title }}</h1>
+    <p class="lead text-muted mb-1">{{ book.authors | join(', ') }}</p>
+
+    <!-- Meta badges -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {% if book.published %}
+      <span class="badge bg-secondary">
+        <i class="bi bi-calendar3 me-1"></i>{{ book.published }}
+      </span>
+      {% endif %}
+      {% if book.page_count %}
+      <span class="badge bg-secondary">
+        <i class="bi bi-file-text me-1"></i>{{ book.page_count }} pages
+      </span>
+      {% endif %}
+      {% if book.rating %}
+      <span class="badge bg-warning text-dark">
+        <i class="bi bi-star-fill me-1"></i>{{ book.rating }}
+        {% if book.ratings_count %}({{ book.ratings_count }} ratings){% endif %}
+      </span>
+      {% endif %}
+      {% if book.language %}
+      <span class="badge bg-info text-dark text-uppercase">{{ book.language }}</span>
+      {% endif %}
+    </div>
+
+    {% if book.categories %}
+    <div class="mb-3">
+      {% for cat in book.categories %}
+      <a
+        href="{{ url_for('main.index', q=cat) }}"
+        class="badge bg-primary text-decoration-none me-1"
+      >{{ cat }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if book.publisher %}
+    <p class="text-muted small">Publisher: {{ book.publisher }}</p>
+    {% endif %}
+
+    <hr class="border-secondary" />
+
+    <h5>Description</h5>
+    {% if book.description %}
+    <div class="text-muted book-description">
+      {{ book.description | safe }}
+    </div>
+    {% else %}
+    <p class="text-muted fst-italic">No description available.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    if (typeof window.loadFavouriteStates === "function") {
+      window.loadFavouriteStates();
+    }
+  });
+</script>
+{% endblock %}
+

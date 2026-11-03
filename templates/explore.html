@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}Explore Catalog &mdash; Smart Library{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <!-- ======================================================================
+       EXPLORE HERO STAGE (Knowledge Discovery Engine Banner)
+       ====================================================================== -->
+  <div class="explore-hero-banner mb-4">
+    <div class="explore-hero-glow" aria-hidden="true"></div>
+    <div class="row align-items-center g-4 position-relative" style="z-index: 2;">
+      <div class="col-lg-7">
+        <div class="explore-hero-badge mb-3">
+          <i class="bi bi-compass-fill text-primary"></i>
+          <span>Global Knowledge Explorer &bull; Google Books Catalog</span>
+        </div>
+        <h1 class="explore-hero-title mb-2">
+          Discover &amp; Explore <span class="text-gradient">Universal Volumes</span>
+        </h1>
+        <p class="explore-hero-desc mb-0">
+          Query authoritative academic volumes, engineering guides, and literary masterpieces with real-time multi-facet indexing and discipline taxonomy.
+        </p>
+      </div>
+      <div class="col-lg-5">
+        <div class="explore-stats-deck d-flex flex-wrap justify-content-lg-end gap-2">
+          <div class="explore-stat-badge">
+            <div class="explore-stat-icon-wrap bg-primary bg-opacity-10 text-primary">
+              <i class="bi bi-book-half"></i>
+            </div>
+            <div>
+              <div class="explore-stat-val">{{ total_items }}</div>
+              <div class="explore-stat-lbl">Volumes Available</div>
+            </div>
+          </div>
+          <div class="explore-stat-badge">
+            <div class="explore-stat-icon-wrap bg-success bg-opacity-10 text-success">
+              <i class="bi bi-layers-fill"></i>
+            </div>
+            <div>
+              <div class="explore-stat-val">Page {{ page }} / {{ total_pages }}</div>
+              <div class="explore-stat-lbl">Catalog Index</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MULTI-FACET FILTER & SEARCH CONTROLS DECK
+       ====================================================================== -->
+  <div class="explore-filter-deck mb-4">
+    <div class="explore-filter-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-3 border-bottom" style="border-color: var(--sl-border-subtle) !important;">
+      <div class="d-flex align-items-center gap-2">
+        <div class="explore-filter-icon">
+          <i class="bi bi-sliders2-vertical"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold mb-0">Multi-Facet Catalog Filters</h5>
+          <span class="text-muted small">Refine search by target metadata, sort criteria, and academic subject</span>
+        </div>
+      </div>
+      {% if query or selected_category != 'All' or search_field != 'all' or sort_by != 'relevance' %}
+      <a href="{{ url_for('books.explore') }}" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 rounded-pill px-3">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset All Filters
+      </a>
+      {% endif %}
+    </div>
+
+    <form action="{{ url_for('books.explore') }}" method="GET" id="explore-filter-form">
+      <div class="row g-3 align-items-end">
+        <!-- Search Keyword -->
+        <div class="col-12 col-md-5">
+          <label class="explore-field-label">
+            <i class="bi bi-search text-primary"></i> Keyword / Book Title / Author
+          </label>
+          <div class="explore-input-wrapper">
+            <i class="bi bi-search explore-input-icon"></i>
+            <input
+              type="text"
+              name="q"
+              class="form-control explore-input"
+              placeholder="e.g. Clean Code, Machine Learning, Physics, Quantum..."
+              value="{{ query }}"
+              autocomplete="off"
+            />
+            {% if query %}
+            <a href="{{ url_for('books.explore', category=selected_category, field=search_field, sort=sort_by) }}" class="explore-clear-query" title="Clear query">
+              <i class="bi bi-x-circle-fill"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Field Type -->
+        <div class="col-6 col-sm-4 col-md-2">
+          <label class="explore-field-label">
+            <i class="bi bi-bullseye text-primary"></i> Search Field
+          </label>
+          <select name="field" class="form-select explore-select">
+            <option value="all" {% if search_field == 'all' %}selected{% endif %}>All Fields</option>
+            <option value="intitle" {% if search_field == 'intitle' %}selected{% endif %}>Book Title</option>
+            <option value="inauthor" {% if search_field == 'inauthor' %}selected{% endif %}>Author</option>
+            <option value="subject" {% if search_field == 'subject' %}selected{% endif %}>Subject</option>
+          </select>
+        </div>
+
+        <!-- Sort Order -->
+        <div class="col-6 col-sm-4 col-md-2">
+          <label class="explore-field-label">
+            <i class="bi bi-arrow-down-up text-primary"></i> Sort By
+          </label>
+          <select name="sort" class="form-select explore-select">
+            <option value="relevance" {% if sort_by == 'relevance' %}selected{% endif %}>Relevance</option>
+            <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Newest First</option>
+          </select>
+        </div>
+
+        <!-- Category Dropdown -->
+        <div class="col-sm-4 col-md-3">
+          <label class="explore-field-label">
+            <i class="bi bi-grid-fill text-primary"></i> Discipline
+          </label>
+          <select name="category" class="form-select explore-select">
+            <option value="All" {% if selected_category == 'All' %}selected{% endif %}>All Disciplines</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Action Row -->
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top" style="border-color: var(--sl-border-subtle) !important;">
+        <span class="text-muted small d-none d-md-inline">
+          <i class="bi bi-lightning-charge text-warning me-1"></i>Press <kbd class="px-2 py-0 bg-body-tertiary border rounded">Enter</kbd> or click Apply
+        </span>
+        <div class="d-flex gap-2 ms-auto">
+          {% if query or selected_category != 'All' or search_field != 'all' or sort_by != 'relevance' %}
+          <a href="{{ url_for('books.explore') }}" class="btn btn-secondary-sl px-3">
+            <i class="bi bi-x-circle me-1"></i> Clear
+          </a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary-sl px-4">
+            <i class="bi bi-funnel-fill me-1"></i> Apply Filters
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Disciplines Ribbon with Emojis -->
+      <div class="explore-disciplines-section mt-4 pt-3 border-top" style="border-color: var(--sl-border-subtle) !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="explore-field-label mb-0">
+            <i class="bi bi-tags-fill text-primary"></i> Quick Discipline Taxonomy
+          </span>
+          <span class="text-muted small" style="font-size: 0.78rem;">Click to filter instantly</span>
+        </div>
+
+        {% set category_meta = {
+          'Programming': {'emoji': '💻'},
+          'Artificial Intelligence': {'emoji': '🤖'},
+          'Machine Learning': {'emoji': '🧠'},
+          'Data Science': {'emoji': '📊'},
+          'Science': {'emoji': '🔬'},
+          'Technology': {'emoji': '⚙️'},
+          'Fiction': {'emoji': '📖'},
+          'Mystery': {'emoji': '🕵️'},
+          'Thriller': {'emoji': '⚡'},
+          'History': {'emoji': '🏛️'},
+          'Business': {'emoji': '💼'},
+          'Self-help': {'emoji': '🏆'},
+          'Biography': {'emoji': '👤'},
+          'Education': {'emoji': '🎓'},
+          'Philosophy': {'emoji': '🏛️'},
+          'Psychology': {'emoji': '🧩'},
+          'Design': {'emoji': '🎨'}
+        } %}
+
+        <div class="explore-disciplines-ribbon">
+          <a href="{{ url_for('books.explore', category='All', q=query, field=search_field, sort=sort_by) }}"
+             class="explore-discipline-chip {% if selected_category == 'All' %}active{% endif %}">
+            <span class="chip-emoji">📚</span>
+            <span>All Disciplines</span>
+          </a>
+          {% for cat in categories %}
+          {% set meta = category_meta.get(cat, {'emoji': '📘'}) %}
+          <a href="{{ url_for('books.explore', category=cat, q=query, field=search_field, sort=sort_by) }}"
+             class="explore-discipline-chip {% if selected_category == cat %}active{% endif %}">
+            <span class="chip-emoji">{{ meta.emoji }}</span>
+            <span>{{ cat }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ======================================================================
+       RESULTS CONTEXT BAR
+       ====================================================================== -->
+  <div class="explore-results-bar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <span class="text-muted small fw-semibold">
+        Active Discovery State:
+      </span>
+      {% if selected_category != 'All' %}
+      <span class="explore-active-filter-badge">
+        <i class="bi bi-tag-fill me-1 text-primary"></i>Discipline: <strong>{{ selected_category }}</strong>
+        <a href="{{ url_for('books.explore', category='All', q=query, field=search_field, sort=sort_by) }}" class="ms-1 text-reset" title="Remove discipline">&times;</a>
+      </span>
+      {% endif %}
+      {% if query %}
+      <span class="explore-active-filter-badge">
+        <i class="bi bi-search me-1 text-primary"></i>Query: &ldquo;<strong>{{ query }}</strong>&rdquo;
+        <a href="{{ url_for('books.explore', category=selected_category, q='', field=search_field, sort=sort_by) }}" class="ms-1 text-reset" title="Remove query">&times;</a>
+      </span>
+      {% endif %}
+      {% if search_field != 'all' %}
+      <span class="explore-active-filter-badge">
+        <i class="bi bi-bullseye me-1 text-primary"></i>Field: <strong>{{ search_field }}</strong>
+      </span>
+      {% endif %}
+      {% if sort_by != 'relevance' %}
+      <span class="explore-active-filter-badge">
+        <i class="bi bi-arrow-down-up me-1 text-primary"></i>Sort: <strong>{{ sort_by }}</strong>
+      </span>
+      {% endif %}
+      {% if selected_category == 'All' and not query and search_field == 'all' and sort_by == 'relevance' %}
+      <span class="badge bg-secondary bg-opacity-10 text-muted px-2 py-1 rounded-pill small">
+        All Volumes &bull; Default Relevance
+      </span>
+      {% endif %}
+    </div>
+
+    <div class="text-muted small">
+      Showing <strong>{{ books|length }}</strong> of approx. <strong>{{ total_items }}</strong> volumes
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       BOOK DISCOVERY GRID (6-Themed Floating Cards)
+       ====================================================================== -->
+  {% if books %}
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 mb-5" id="explore-books-grid">
+    {% for book in books %}
+    {% set theme_idx = (loop.index0 % 6) + 1 %}
+    <div class="col">
+      <div class="book-card-v2 book-card-theme-{{ theme_idx }}">
+        <!-- Top Color Accent Bar -->
+        <div class="card-accent-bar"></div>
+
+        <!-- Shimmer Light Sweep Effect -->
+        <div class="card-shimmer-sweep"></div>
+
+        <!-- Bookmark Quick Action -->
+        <button
+          type="button"
+          class="bookmark-badge"
+          title="Save to My Library"
+          onclick="window.slAddToLibrary('{{ book.id }}', 'want_to_read')"
+          data-lib-btn="{{ book.id }}"
+        >
+          <i class="bi bi-bookmark-plus"></i>
+        </button>
+
+        <!-- 3D Floating Book Cover Stage -->
+        <div class="book-card-cover-stage">
+          <a href="{{ url_for('books.book_details', book_id=book.id) }}">
+            <img
+              src="{{ book.thumbnail }}"
+              alt="{{ book.title }}"
+              class="book-cover-3d"
+              loading="lazy"
+              onerror="this.src='/static/images/default-book.svg'"
+            />
+          </a>
+        </div>
+
+        <!-- Card Body Content with Pixel-Perfect Alignment -->
+        <div class="book-card-content">
+          <span class="book-category-tag">{{ book.category or 'Catalog' }}</span>
+          <h5 class="book-card-title" title="{{ book.title }}">
+            <a href="{{ url_for('books.book_details', book_id=book.id) }}" class="text-decoration-none text-reset">
+              {{ book.title }}
+            </a>
+          </h5>
+          <div class="book-card-author">{{ book.authors_str or 'Verified Author' }}</div>
+          <p class="book-card-desc">{{ book.description or "Verified publication curated in the library catalog with comprehensive metadata." }}</p>
+
+          <!-- Fixed-Height Rating Row for Alignment -->
+          <div class="book-rating-row mb-2 d-flex align-items-center gap-1 small" style="height: 1.25rem;">
+            {% if book.rating %}
+              <i class="bi bi-star-fill text-warning"></i>
+              <strong class="text-body ms-1">{{ book.rating }}</strong>
+              <span class="text-muted">({{ book.ratings_count }} ratings)</span>
+            {% else %}
+              <span class="text-muted opacity-75 small"><i class="bi bi-patch-check-fill text-primary me-1"></i>Verified Catalog Volume</span>
+            {% endif %}
+          </div>
+
+          <!-- Bottom Actions Row -->
+          <div class="book-card-actions mt-auto d-flex gap-2 pt-2 border-top" style="border-color: var(--sl-border-subtle) !important;">
+            <a href="{{ url_for('books.book_details', book_id=book.id) }}" class="btn btn-secondary-sl btn-sm flex-grow-1">
+              <i class="bi bi-info-circle me-1"></i>Details
+            </a>
+            <button
+              type="button"
+              class="btn btn-primary-sl btn-card-action btn-sm"
+              onclick="window.slAddToLibrary('{{ book.id }}', 'want_to_read')"
+              title="Add to My Shelf"
+            >
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ======================================================================
+       GLASSMORFHIC PAGINATION CONTROLS
+       ====================================================================== -->
+  {% if total_pages > 1 %}
+  <nav aria-label="Book page navigation" class="mb-5">
+    <ul class="pagination explore-pagination justify-content-center align-items-center gap-1 flex-wrap">
+      <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+        <a class="page-link rounded-pill px-3" href="{{ url_for('books.explore', q=query, category=selected_category, field=search_field, sort=sort_by, page=page-1) }}">
+          <i class="bi bi-chevron-left me-1"></i> Previous
+        </a>
+      </li>
+
+      {% for p in range(1, total_pages + 1) %}
+        {% if p == page or (p >= page - 2 and p <= page + 2) or p == 1 or p == total_pages %}
+          <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;" href="{{ url_for('books.explore', q=query, category=selected_category, field=search_field, sort=sort_by, page=p) }}">
+              {{ p }}
+            </a>
+          </li>
+        {% elif p == page - 3 or p == page + 3 %}
+          <li class="page-item disabled"><span class="page-link border-0">&hellip;</span></li>
+        {% endif %}
+      {% endfor %}
+
+      <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+        <a class="page-link rounded-pill px-3" href="{{ url_for('books.explore', q=query, category=selected_category, field=search_field, sort=sort_by, page=page+1) }}">
+          Next <i class="bi bi-chevron-right ms-1"></i>
+        </a>
+      </li>
+    </ul>
+    <div class="text-center text-muted small mt-2">
+      Viewing Page <strong>{{ page }}</strong> of <strong>{{ total_pages }}</strong> &bull; Total {{ total_items }} volumes registered
+    </div>
+  </nav>
+  {% endif %}
+
+  <!-- ======================================================================
+       EMPTY DISCOVERY POD
+       ====================================================================== -->
+  {% else %}
+  <div class="explore-empty-pod text-center py-5 my-4">
+    <div class="explore-empty-icon mb-3">
+      <i class="bi bi-journal-x"></i>
+    </div>
+    <h3 class="fw-bold mb-2">No Volumes Found</h3>
+    <p class="text-muted mx-auto mb-4" style="max-width: 520px;">
+      We could not find any books matching your specific search query or active filters. Try searching with different keywords, changing the discipline, or resetting filters.
+    </p>
+
+    <!-- Popular Discipline Suggestions -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+      <span class="small fw-semibold text-muted align-self-center me-1">Suggested Disciplines:</span>
+      <a href="{{ url_for('books.explore', category='Programming') }}" class="badge rounded-pill bg-body-secondary text-body text-decoration-none p-2 px-3">
+        💻 Programming
+      </a>
+      <a href="{{ url_for('books.explore', category='Artificial Intelligence') }}" class="badge rounded-pill bg-body-secondary text-body text-decoration-none p-2 px-3">
+        🤖 AI &amp; Machine Learning
+      </a>
+      <a href="{{ url_for('books.explore', category='Science') }}" class="badge rounded-pill bg-body-secondary text-body text-decoration-none p-2 px-3">
+        🔬 Science
+      </a>
+      <a href="{{ url_for('books.explore', category='Business') }}" class="badge rounded-pill bg-body-secondary text-body text-decoration-none p-2 px-3">
+        💼 Business
+      </a>
+      <a href="{{ url_for('books.explore', category='Fiction') }}" class="badge rounded-pill bg-body-secondary text-body text-decoration-none p-2 px-3">
+        📖 Fiction
+      </a>
+    </div>
+
+    <div class="d-flex justify-content-center gap-2">
+      <a href="{{ url_for('books.explore') }}" class="btn btn-primary-sl px-4">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset All Filters
+      </a>
+      <a href="{{ url_for('recommendations.recommendations_page') }}" class="btn btn-secondary-sl px-4">
+        <i class="bi bi-magic me-1"></i> Ask AI Assistant
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}My Digital Shelf &mdash; Smart Library{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <!-- Header Banner -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-5">
+    <div>
+      <span class="section-tagline">Personal Collection</span>
+      <h1 class="display-6 fw-bold mb-1">My Digital Shelf</h1>
+      <p class="text-muted small mb-0">Organize your reading lists, track status, and curate your personal books.</p>
+    </div>
+    <a href="{{ url_for('books.explore') }}" class="btn btn-primary-sl">
+      <i class="bi bi-plus-lg me-1"></i> Add More Books
+    </a>
+  </div>
+
+  <!-- Status Filter Pills -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 p-3 rounded-4" style="background-color: var(--sl-bg-card); border: 1px solid var(--sl-border);">
+    <ul class="nav nav-pills gap-1">
+      <li class="nav-item">
+        <a class="nav-link rounded-pill px-3 fw-semibold small {% if current_filter == 'all' %}active{% endif %}" href="{{ url_for('library.my_library_page', status='all') }}">
+          All Books <span class="badge bg-secondary ms-1 rounded-pill">{{ stats.total_saved }}</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link rounded-pill px-3 fw-semibold small {% if current_filter == 'currently_reading' %}active{% endif %}" href="{{ url_for('library.my_library_page', status='currently_reading') }}">
+          Currently Reading <span class="badge bg-warning text-dark ms-1 rounded-pill">{{ stats.currently_reading }}</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link rounded-pill px-3 fw-semibold small {% if current_filter == 'want_to_read' %}active{% endif %}" href="{{ url_for('library.my_library_page', status='want_to_read') }}">
+          Want to Read <span class="badge bg-primary ms-1 rounded-pill">{{ stats.want_to_read }}</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link rounded-pill px-3 fw-semibold small {% if current_filter == 'completed' %}active{% endif %}" href="{{ url_for('library.my_library_page', status='completed') }}">
+          Completed <span class="badge bg-success ms-1 rounded-pill">{{ stats.completed }}</span>
+        </a>
+      </li>
+    </ul>
+
+    <!-- Quick In-Library Filter Input -->
+    <div style="min-width: 250px;">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-primary"></i></span>
+        <input
+          type="text"
+          id="library-search-filter"
+          class="form-control border-start-0"
+          placeholder="Filter saved books..."
+          onkeyup="filterLibraryCards(this.value)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Library Grid -->
+  {% if books %}
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 mb-5" id="library-books-grid">
+    {% for book in books %}
+    <div class="col library-item-col" id="lib-card-{{ book.googleBookId }}" data-title="{{ book.bookTitle | lower }}">
+      <div class="book-card-v2">
+        <div class="book-card-cover-stage">
+          <img
+            src="{{ book.bookThumbnail or url_for('static', filename='images/default-book.svg') }}"
+            alt="{{ book.bookTitle }}"
+            class="book-cover-3d"
+            loading="lazy"
+            onerror="this.src='/static/images/default-book.svg'"
+          />
+        </div>
+
+        <div class="book-card-content">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="book-category-tag mb-0">{{ book.bookCategory or 'General' }}</span>
+            <span class="badge status-pill-{{ book.readingStatus }}" style="font-size: 0.72rem;">
+              {{ book.readingStatus | replace('_', ' ') | title }}
+            </span>
+          </div>
+
+          <h5 class="book-card-title" title="{{ book.bookTitle }}">
+            <a href="{{ url_for('books.book_details', book_id=book.googleBookId) }}" class="text-decoration-none text-reset">
+              {{ book.bookTitle }}
+            </a>
+          </h5>
+          <div class="book-card-author">{{ book.bookAuthors | join(', ') if book.bookAuthors else 'Verified Author' }}</div>
+
+          <!-- Status Dropdown Switcher -->
+          <div class="mb-2">
+            <label class="form-label small text-muted mb-1 fw-bold" style="font-size: 0.74rem;">Reading Status:</label>
+            <select
+              class="form-select form-select-sm"
+              onchange="window.slUpdateStatus('{{ book.googleBookId }}', this.value)"
+            >
+              <option value="want_to_read" {% if book.readingStatus == 'want_to_read' %}selected{% endif %}>
+                Want to Read
+              </option>
+              <option value="currently_reading" {% if book.readingStatus == 'currently_reading' %}selected{% endif %}>
+                Currently Reading
+              </option>
+              <option value="completed" {% if book.readingStatus == 'completed' %}selected{% endif %}>
+                Completed
+              </option>
+            </select>
+          </div>
+
+          <!-- Reading Progress Tracker (Active for Currently Reading) -->
+          {% if book.readingStatus == 'currently_reading' %}
+          <div class="reading-progress-shelf-box mb-3 p-2 rounded" style="background: var(--sl-bg-subtle); border: 1px solid var(--sl-border-subtle);">
+            <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 0.74rem;">
+              <span class="text-muted">
+                Page <strong class="text-primary" data-page-val="{{ book.googleBookId }}">{{ book.currentPage or 0 }}</strong> of {{ book.pageCount or 200 }}
+              </span>
+              <span class="fw-bold text-muted" data-progress-percent="{{ book.googleBookId }}">{{ book.progressPercent or 0 }}%</span>
+            </div>
+            <div class="progress mb-2" style="height: 6px; border-radius: 3px; background: rgba(0,0,0,0.08);">
+              <div
+                class="progress-bar bg-warning progress-bar-striped progress-bar-animated"
+                data-progress-bar="{{ book.googleBookId }}"
+                style="width: {{ book.progressPercent or 0 }}%;"
+              ></div>
+            </div>
+            <div class="d-flex gap-1">
+              <button
+                type="button"
+                class="btn btn-warning btn-sm flex-grow-1 fw-bold py-1 px-2 text-dark shadow-sm"
+                style="font-size: 0.74rem;"
+                onclick="window.slIncrementPage('{{ book.googleBookId }}', event)"
+                title="Mark next page completed (+1)"
+              >
+                <i class="bi bi-check2-circle me-1"></i>+1 Page Read
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm py-1 px-2"
+                style="font-size: 0.74rem;"
+                onclick="window.slOpenPageEditModal('{{ book.googleBookId }}', '{{ book.bookTitle | escape }}', {{ book.currentPage or 0 }}, {{ book.pageCount or 200 }})"
+                title="Edit Exact Page Number"
+              >
+                <i class="bi bi-pencil-square"></i> Edit
+              </button>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="book-card-actions mt-auto d-flex gap-2 pt-2 border-top" style="border-color: var(--sl-border-subtle) !important;">
+            <a href="{{ url_for('books.book_details', book_id=book.googleBookId) }}" class="btn btn-secondary-sl btn-sm flex-grow-1">
+              <i class="bi bi-info-circle me-1"></i>Details
+            </a>
+            <a href="{{ url_for('books.book_reader', book_id=book.googleBookId) }}" class="btn btn-primary-sl btn-sm px-2" title="Read in Digital Studio">
+              <i class="bi bi-book-half"></i> Read
+            </a>
+            <button
+              type="button"
+              class="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center"
+              style="width: 35px; height: 35px; min-width: 35px; flex-shrink: 0;"
+              title="Remove from Shelf"
+              onclick="window.slRemoveFromLibrary('{{ book.googleBookId }}')"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-bookshelf display-1 text-muted opacity-50 mb-3"></i>
+    <h4 class="fw-bold">No books in this reading list</h4>
+    <p class="text-muted">Start discovering and adding books to your personal shelf.</p>
+    <a href="{{ url_for('books.explore') }}" class="btn btn-primary-sl px-4">
+      <i class="bi bi-compass me-1"></i> Browse Books
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  function filterLibraryCards(term) {
+    const query = term.toLowerCase().trim();
+    document.querySelectorAll('.library-item-col').forEach(col => {
+      const title = col.getAttribute('data-title') || '';
+      if (!query || title.includes(query)) {
+        col.style.display = '';
+      } else {
+        col.style.display = 'none';
+      }
+    });
+  }
+</script>
+{% endblock %}

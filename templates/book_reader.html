@@ -1,0 +1,615 @@
+{% extends "base.html" %}
+
+{% block title %}Reading: {{ book.title }} &mdash; Smart Library{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Dedicated In-App Book Reader Studio Styles ── */
+  body {
+    background-color: var(--sl-bg);
+  }
+
+  .reader-studio-wrap {
+    min-height: calc(100vh - 72px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .reader-toolbar {
+    background: var(--sl-bg-card);
+    border: 1.5px solid var(--sl-border);
+    border-radius: var(--sl-radius-lg);
+    padding: 0.85rem 1.25rem;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  }
+
+  .reader-view-container {
+    background: var(--sl-bg-card);
+    border: 1.5px solid var(--sl-border);
+    border-radius: var(--sl-radius-xl);
+    overflow: hidden;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.06);
+    position: relative;
+    min-height: 720px;
+    height: 78vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Google Books Canvas */
+  #viewerCanvas {
+    width: 100%;
+    height: 100%;
+    min-height: 680px;
+    background: #FFFFFF;
+  }
+
+  /* PDF.js Viewer Canvas & Container */
+  #pdf-viewer-stage {
+    display: none;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #525659;
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .pdf-page-canvas {
+    display: block;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    background: #FFFFFF;
+    max-width: 100%;
+    border-radius: 4px;
+  }
+
+  /* Reading Theme Overrides */
+  .reader-theme-sepia #pdf-viewer-stage {
+    background: #F4ECD8;
+  }
+  .reader-theme-sepia .pdf-page-canvas {
+    filter: sepia(0.35);
+  }
+  .reader-theme-night #pdf-viewer-stage {
+    background: #111827;
+  }
+  .reader-theme-night .pdf-page-canvas {
+    filter: invert(0.9) hue-rotate(180deg);
+  }
+
+  /* Custom PDF Drop Zone */
+  .reader-drop-zone {
+    border: 2px dashed var(--sl-border);
+    border-radius: var(--sl-radius-lg);
+    background: var(--sl-bg-subtle);
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.25s ease;
+    cursor: pointer;
+  }
+
+  .reader-drop-zone:hover,
+  .reader-drop-zone.dragover {
+    border-color: var(--sl-primary);
+    background: rgba(37, 99, 235, 0.06);
+  }
+
+  .reader-mode-pill {
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1.5px solid var(--sl-border);
+    background: var(--sl-bg);
+    color: var(--sl-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .reader-mode-pill.active {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    color: #FFFFFF !important;
+    border-color: #2563EB;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  }
+
+  .reader-btn-control {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--sl-radius-md);
+    border: 1px solid var(--sl-border);
+    background: var(--sl-bg);
+    color: var(--sl-text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .reader-btn-control:hover {
+    border-color: var(--sl-primary);
+    color: var(--sl-primary);
+    transform: translateY(-1px);
+  }
+
+  /* Fullscreen Viewport Mode */
+  .reader-view-container:fullscreen {
+    border-radius: 0;
+    border: none;
+    height: 100vh;
+    width: 100vw;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5 py-4 reader-studio-wrap">
+  <!-- Top Navigation & Controls Toolbar -->
+  <div class="reader-toolbar mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <!-- Left: Exit & Volume Title -->
+    <div class="d-flex align-items-center gap-3">
+      <a href="{{ url_for('books.book_details', book_id=book.id) }}" class="btn btn-secondary-sl btn-sm d-inline-flex align-items-center gap-1">
+        <i class="bi bi-arrow-left"></i> Book Details
+      </a>
+      <div>
+        <h5 class="fw-bold mb-0 text-truncate" style="max-width: 380px;" title="{{ book.title }}">
+          {{ book.title }}
+        </h5>
+        <div class="small text-muted">
+          {{ book.authors_str or 'Verified Author' }} &bull;
+          {% if book.viewability == 'ALL_PAGES' %}
+          <span class="text-success fw-bold"><i class="bi bi-patch-check-fill me-1"></i>Full Volume (100% Pages)</span>
+          {% elif book.viewability == 'PARTIAL' %}
+          <span class="text-primary fw-bold"><i class="bi bi-book-half me-1"></i>Curated Reader Preview</span>
+          {% else %}
+          <span class="text-info fw-bold"><i class="bi bi-file-earmark-pdf-fill me-1"></i>In-App PDF Studio</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Reader Mode Switcher -->
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="reader-mode-pill active" id="btn-mode-google" onclick="window.slSwitchReaderMode('google')">
+        <i class="bi bi-google me-1 text-primary"></i> Google Books Viewer
+      </button>
+      <button type="button" class="reader-mode-pill" id="btn-mode-pdf" onclick="window.slSwitchReaderMode('pdf')">
+        <i class="bi bi-file-earmark-pdf me-1 text-danger"></i> PDF &amp; Document Reader
+      </button>
+    </div>
+
+    <!-- Right: Page Navigation, Reading Progress & Zoom Tools -->
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <!-- Live Reading Progress Tracker in Toolbar -->
+      <div class="d-flex align-items-center gap-2 px-2 py-1 rounded border shadow-sm" style="background: var(--sl-bg-subtle); font-size: 0.78rem;">
+        <span class="text-muted">
+          Read: Page <strong class="text-primary" data-page-val="{{ book.id }}">{{ user_library_entry.currentPage if user_library_entry else 0 }}</strong>/<span id="reader-tracker-total">{{ user_library_entry.pageCount if user_library_entry else (book.page_count or 200) }}</span>
+          (<span data-progress-percent="{{ book.id }}">{{ user_library_entry.progressPercent if user_library_entry else 0 }}%</span>)
+        </span>
+        <button
+          type="button"
+          class="btn btn-warning btn-sm py-0 px-2 fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-sm"
+          style="font-size: 0.75rem; height: 26px;"
+          onclick="window.slIncrementPage('{{ book.id }}', event)"
+          title="Mark next page completed (+1)"
+        >
+          <i class="bi bi-check2-circle"></i> +1 Read
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm py-0 px-2"
+          style="font-size: 0.75rem; height: 26px;"
+          onclick="window.slOpenPageEditModal('{{ book.id }}', '{{ book.title | escape }}', {{ user_library_entry.currentPage if user_library_entry else 0 }}, {{ user_library_entry.pageCount if user_library_entry else (book.page_count or 200) }})"
+          title="Edit exact page number"
+        >
+          <i class="bi bi-pencil-square"></i> Edit
+        </button>
+      </div>
+
+      <!-- PDF Page Jump (Active in PDF mode) -->
+      <div id="pdf-page-controls" class="d-none align-items-center gap-1 me-2">
+        <button type="button" class="reader-btn-control" id="pdf-prev-btn" title="Previous Page">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="small px-1">
+          Page <strong id="pdf-current-page">1</strong> / <span id="pdf-total-pages">-</span>
+        </span>
+        <button type="button" class="reader-btn-control" id="pdf-next-btn" title="Next Page">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-warning btn-sm py-0 px-2 ms-1 fw-bold"
+          style="font-size: 0.75rem; height: 28px;"
+          onclick="window.slMarkCurrentPdfPageRead()"
+          title="Sync current viewing PDF page to library progress"
+        >
+          <i class="bi bi-bookmark-check-fill me-1"></i>Mark Current Read
+        </button>
+      </div>
+
+      <!-- Zoom Controls (PDF Mode) -->
+      <div id="pdf-zoom-controls" class="d-none align-items-center gap-1 me-2">
+        <button type="button" class="reader-btn-control" id="pdf-zoom-out" title="Zoom Out">
+          <i class="bi bi-zoom-out"></i>
+        </button>
+        <button type="button" class="reader-btn-control" id="pdf-zoom-in" title="Zoom In">
+          <i class="bi bi-zoom-in"></i>
+        </button>
+      </div>
+
+      <!-- Reading Theme Toggles -->
+      <div class="btn-group btn-group-sm" role="group" aria-label="Reading Theme">
+        <button type="button" class="btn btn-outline-secondary" onclick="window.slSetReaderTheme('light')" title="Day / Paper Theme">
+          <i class="bi bi-sun"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" onclick="window.slSetReaderTheme('sepia')" title="Sepia / Warm Theme">
+          <i class="bi bi-cup-hot"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" onclick="window.slSetReaderTheme('night')" title="Night / Dark Theme">
+          <i class="bi bi-moon-stars"></i>
+        </button>
+      </div>
+
+      <!-- Fullscreen Toggle -->
+      <button type="button" class="reader-btn-control" onclick="window.slToggleReaderFullscreen()" title="Toggle Fullscreen">
+        <i class="bi bi-fullscreen" id="fs-icon"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Digital Reading Stage -->
+  <div class="reader-view-container flex-grow-1" id="reader-view-stage">
+    <!-- Mode 1: Google Books Embedded Viewer Canvas -->
+    <div id="viewerCanvas">
+      <div class="d-flex flex-column align-items-center justify-content-center h-100 p-5 text-center" id="viewer-loading-state">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+        <h5 class="fw-bold mb-1">Loading Google Interactive Reader...</h5>
+        <p class="text-muted small">Retrieving digital volume pages from Google Books Cloud API</p>
+      </div>
+    </div>
+
+    <!-- Mode 2: Mozilla PDF.js Canvas Container -->
+    <div id="pdf-viewer-stage">
+      <div id="pdf-loading-indicator" class="text-white my-5 d-none">
+        <div class="spinner-border text-light mb-2" role="status"></div>
+        <div>Rendering PDF Pages...</div>
+      </div>
+      <div id="pdf-pages-render-target"></div>
+    </div>
+  </div>
+
+  <!-- Bottom PDF Attachment & Cloud Sync Deck -->
+  <div class="card border-0 shadow-sm mt-3 p-3" style="background-color: var(--sl-bg-card); border: 1.5px solid var(--sl-border) !important; border-radius: var(--sl-radius-lg);">
+    <div class="row align-items-center g-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center gap-3">
+          <div class="fs-3 text-primary"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+          <div>
+            <h6 class="fw-bold mb-1">Read Complete Book / Personal PDF Copy</h6>
+            <p class="text-muted small mb-0">
+              Have your own full PDF copy of this volume? Select or drop your PDF to read all pages right here with page flipping, zoom, and automatic reading memory!
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 d-flex justify-content-md-end align-items-center gap-2">
+        <input type="file" id="local-pdf-input" accept="application/pdf" class="d-none" />
+        <button type="button" class="btn btn-primary-sl btn-sm" onclick="document.getElementById('local-pdf-input').click()">
+          <i class="bi bi-upload me-1"></i> Open Local PDF File
+        </button>
+        {% if book.pdf_download_link %}
+        <a href="{{ book.pdf_download_link }}" target="_blank" rel="noopener" class="btn btn-secondary-sl btn-sm">
+          <i class="bi bi-cloud-arrow-down me-1"></i> Download Original PDF
+        </a>
+        {% endif %}
+        {% if book.web_reader_link %}
+        <a href="{{ book.web_reader_link }}" target="_blank" rel="noopener" class="btn btn-secondary-sl btn-sm">
+          <i class="bi bi-box-arrow-up-right me-1"></i> Web Reader
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Google Books Embedded Viewer API -->
+<script type="text/javascript" src="https://www.google.com/books/jsapi.js"></script>
+
+<!-- Mozilla PDF.js Library for Full PDF Rendering -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  // Configure PDF.js Worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  const BOOK_ID = "{{ book.id }}";
+  const BOOK_ISBN = "{{ book.isbn or '' }}";
+  const PDF_DOWNLOAD_LINK = "{{ book.pdf_download_link or '' }}";
+
+  let currentMode = "google"; // "google" | "pdf"
+  let googleViewer = null;
+  let currentPdfDoc = null;
+  let currentPdfPage = 1;
+  let pdfZoomScale = 1.35;
+
+  // ── Mode Switcher ──
+  window.slSwitchReaderMode = function (mode) {
+    currentMode = mode;
+    const btnGoogle = document.getElementById("btn-mode-google");
+    const btnPdf = document.getElementById("btn-mode-pdf");
+    const viewerGoogle = document.getElementById("viewerCanvas");
+    const viewerPdf = document.getElementById("pdf-viewer-stage");
+    const pageControls = document.getElementById("pdf-page-controls");
+    const zoomControls = document.getElementById("pdf-zoom-controls");
+
+    if (mode === "google") {
+      btnGoogle.classList.add("active");
+      btnPdf.classList.remove("active");
+      viewerGoogle.style.display = "block";
+      viewerPdf.style.display = "none";
+      pageControls.classList.add("d-none");
+      zoomControls.classList.add("d-none");
+    } else {
+      btnPdf.classList.add("active");
+      btnGoogle.classList.remove("active");
+      viewerGoogle.style.display = "none";
+      viewerPdf.style.display = "block";
+      pageControls.classList.remove("d-none");
+      pageControls.classList.add("d-flex");
+      zoomControls.classList.remove("d-none");
+      zoomControls.classList.add("d-flex");
+
+      // Auto-load direct PDF if available and not yet loaded
+      if (!currentPdfDoc && PDF_DOWNLOAD_LINK) {
+        loadPdfFromUrl(PDF_DOWNLOAD_LINK);
+      }
+    }
+  };
+
+  // ── Theme Switcher ──
+  window.slSetReaderTheme = function (theme) {
+    const stage = document.getElementById("reader-view-stage");
+    stage.classList.remove("reader-theme-sepia", "reader-theme-night");
+    if (theme === "sepia") {
+      stage.classList.add("reader-theme-sepia");
+    } else if (theme === "night") {
+      stage.classList.add("reader-theme-night");
+    }
+  };
+
+  // ── Fullscreen Toggle ──
+  window.slToggleReaderFullscreen = function () {
+    const stage = document.getElementById("reader-view-stage");
+    const icon = document.getElementById("fs-icon");
+    if (!document.fullscreenElement) {
+      stage.requestFullscreen().then(() => {
+        icon.className = "bi bi-fullscreen-exit";
+      }).catch((e) => console.warn(e));
+    } else {
+      document.exitFullscreen().then(() => {
+        icon.className = "bi bi-fullscreen";
+      }).catch((e) => console.warn(e));
+    }
+  };
+
+  // ── Google Books Embedded Viewer Initialization ──
+  function initGoogleBooksViewer() {
+    google.books.load();
+    google.books.setOnLoadCallback(() => {
+      const container = document.getElementById("viewerCanvas");
+      if (!container) return;
+
+      googleViewer = new google.books.DefaultViewer(container);
+
+      function notFound() {
+        console.warn("Google Books Embedded Viewer: ID not directly embeddable, trying ISBN or fallback.");
+        if (BOOK_ISBN) {
+          googleViewer.load("ISBN:" + BOOK_ISBN, notFoundFinal, () => {
+            console.log("Loaded via ISBN:", BOOK_ISBN);
+          });
+        } else {
+          notFoundFinal();
+        }
+      }
+
+      function notFoundFinal() {
+        container.innerHTML = `
+          <div class="d-flex flex-column align-items-center justify-content-center h-100 p-5 text-center">
+            <div class="display-4 text-warning mb-3"><i class="bi bi-shield-lock-fill"></i></div>
+            <h4 class="fw-bold mb-2">Publisher Embedding Restricted</h4>
+            <p class="text-muted mx-auto mb-4" style="max-width: 520px;">
+              Google Books API notes that this specific publisher has restricted in-line browser embedding. You can read it directly in Google's Cloud Web Reader or load your PDF version below!
+            </p>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-primary-sl" onclick="window.slSwitchReaderMode('pdf')">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Open PDF Reader
+              </button>
+              {% if book.web_reader_link %}
+              <a href="{{ book.web_reader_link }}" target="_blank" rel="noopener" class="btn btn-secondary-sl">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Open in Google Web Reader
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        `;
+      }
+
+      // Load by Google Books ID
+      googleViewer.load(BOOK_ID, notFound, () => {
+        console.log("Google Books Viewer loaded successfully for book:", BOOK_ID);
+      });
+    });
+  }
+
+  // ── PDF.js In-App Document Reader ──
+  async function renderPdfDocument(pdfData) {
+    const loadingEl = document.getElementById("pdf-loading-indicator");
+    const target = document.getElementById("pdf-pages-render-target");
+    loadingEl.classList.remove("d-none");
+    target.innerHTML = "";
+
+    try {
+      const loadingTask = pdfjsLib.getDocument(pdfData);
+      currentPdfDoc = await loadingTask.promise;
+
+      document.getElementById("pdf-total-pages").textContent = currentPdfDoc.numPages;
+
+      // Restore last read page if available
+      const savedPage = localStorage.getItem(`sl_read_page_${BOOK_ID}`);
+      currentPdfPage = savedPage ? parseInt(savedPage, 10) : 1;
+      document.getElementById("pdf-current-page").textContent = currentPdfPage;
+
+      // Render all pages sequentially for smooth scroll
+      for (let pageNum = 1; pageNum <= currentPdfDoc.numPages; pageNum++) {
+        const page = await currentPdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: pdfZoomScale });
+
+        const canvas = document.createElement("canvas");
+        canvas.id = `pdf-page-${pageNum}`;
+        canvas.className = "pdf-page-canvas";
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const ctx = canvas.getContext("2d");
+        const renderContext = { canvasContext: ctx, viewport: viewport };
+        await page.render(renderContext).promise;
+
+        target.appendChild(canvas);
+      }
+
+      loadingEl.classList.add("d-none");
+      window.slToast("PDF loaded successfully! You can read all pages here.", "success");
+
+      // Scroll to current page
+      const targetCanvas = document.getElementById(`pdf-page-${currentPdfPage}`);
+      if (targetCanvas) {
+        targetCanvas.scrollIntoView({ behavior: "smooth" });
+      }
+    } catch (err) {
+      console.error("PDF rendering error:", err);
+      loadingEl.classList.add("d-none");
+      target.innerHTML = `
+        <div class="alert alert-danger mx-auto mt-5" style="max-width: 500px;">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i> Failed to render PDF document: ${err.message}
+        </div>
+      `;
+    }
+  }
+
+  function loadPdfFromUrl(url) {
+    renderPdfDocument({ url: url });
+  }
+
+  // Setup Local PDF File Picker
+  const fileInput = document.getElementById("local-pdf-input");
+  if (fileInput) {
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file && file.type === "application/pdf") {
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          window.slSwitchReaderMode("pdf");
+          renderPdfDocument({ data: new Uint8Array(ev.target.result) });
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        window.slToast("Please select a valid PDF file.", "warning");
+      }
+    });
+  }
+
+  // Setup PDF Page Navigation Buttons
+  const prevBtn = document.getElementById("pdf-prev-btn");
+  const nextBtn = document.getElementById("pdf-next-btn");
+
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => {
+      if (currentPdfDoc && currentPdfPage > 1) {
+        currentPdfPage--;
+        document.getElementById("pdf-current-page").textContent = currentPdfPage;
+        localStorage.setItem(`sl_read_page_${BOOK_ID}`, currentPdfPage);
+        const el = document.getElementById(`pdf-page-${currentPdfPage}`);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      if (currentPdfDoc && currentPdfPage < currentPdfDoc.numPages) {
+        currentPdfPage++;
+        document.getElementById("pdf-current-page").textContent = currentPdfPage;
+        localStorage.setItem(`sl_read_page_${BOOK_ID}`, currentPdfPage);
+        const el = document.getElementById(`pdf-page-${currentPdfPage}`);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }
+    });
+  }
+
+  // Zoom buttons
+  const zoomIn = document.getElementById("pdf-zoom-in");
+  const zoomOut = document.getElementById("pdf-zoom-out");
+  if (zoomIn) {
+    zoomIn.addEventListener("click", () => {
+      if (currentPdfDoc && pdfZoomScale < 2.5) {
+        pdfZoomScale += 0.25;
+        // Re-render
+        const canvases = document.querySelectorAll(".pdf-page-canvas");
+        canvases.forEach(c => c.style.transform = `scale(${pdfZoomScale / 1.35})`);
+      }
+    });
+  }
+  if (zoomOut) {
+    zoomOut.addEventListener("click", () => {
+      if (currentPdfDoc && pdfZoomScale > 0.6) {
+        pdfZoomScale -= 0.25;
+        const canvases = document.querySelectorAll(".pdf-page-canvas");
+        canvases.forEach(c => c.style.transform = `scale(${pdfZoomScale / 1.35})`);
+      }
+    });
+  }
+
+  // Auto-track scroll page
+  const viewerStage = document.getElementById("pdf-viewer-stage");
+  if (viewerStage) {
+    viewerStage.addEventListener("scroll", () => {
+      if (!currentPdfDoc) return;
+      const canvases = document.querySelectorAll(".pdf-page-canvas");
+      canvases.forEach((c, idx) => {
+        const rect = c.getBoundingClientRect();
+        if (rect.top >= 0 && rect.top <= window.innerHeight / 2) {
+          currentPdfPage = idx + 1;
+          document.getElementById("pdf-current-page").textContent = currentPdfPage;
+          localStorage.setItem(`sl_read_page_${BOOK_ID}`, currentPdfPage);
+        }
+      });
+    }, { passive: true });
+  }
+
+  // Sync current viewing PDF page to Cloud Reading Progress
+  window.slMarkCurrentPdfPageRead = async function () {
+    const total = currentPdfDoc ? currentPdfDoc.numPages : (parseInt(document.getElementById("reader-tracker-total").textContent, 10) || 200);
+    const result = await window.slUpdateReadingProgress(BOOK_ID, currentPdfPage, total);
+    if (result && result.success) {
+      const trackerTotal = document.getElementById("reader-tracker-total");
+      if (trackerTotal) trackerTotal.textContent = result.pageCount;
+    }
+  };
+
+  // Run on page load
+  window.addEventListener("DOMContentLoaded", () => {
+    initGoogleBooksViewer();
+  });
+})();
+</script>
+{% endblock %}
+

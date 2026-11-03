@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Reading Preferences &mdash; Smart Library{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 860px;">
+  <div class="mb-5 text-center text-md-start">
+    <span class="section-tagline">Recommendation Engine Calibration</span>
+    <h1 class="display-6 fw-bold mb-2">Reading Preferences</h1>
+    <p class="text-muted small mb-0">
+      Select your favourite disciplines and topics. The intelligent recommendation algorithm uses
+      these preferences as a <strong>20% weighted factor</strong> when scoring and ranking book suggestions.
+    </p>
+  </div>
+
+  <div class="card border-0 shadow-sm p-4 p-md-5" style="background-color: var(--sl-bg-card); border: 1px solid var(--sl-border) !important; border-radius: var(--sl-radius-lg);">
+    <form id="preferences-form">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold mb-0">Select Your Favourite Topics</h5>
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-1 rounded-pill small" id="selected-count-msg">
+          Selected {{ user_preferences | length }} topic(s)
+        </span>
+      </div>
+
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 mb-5">
+        {% for cat in all_categories %}
+        <div class="col">
+          <div class="form-check p-3 rounded-3 border h-100 d-flex align-items-center transition-all" style="background-color: var(--sl-bg-subtle); border-color: var(--sl-border) !important;">
+            <input
+              class="form-check-input ms-0 me-3"
+              type="checkbox"
+              value="{{ cat }}"
+              id="pref-{{ loop.index }}"
+              name="categories"
+              {% if cat in user_preferences %}checked{% endif %}
+              style="width: 20px; height: 20px;"
+            />
+            <label class="form-check-label fw-bold text-body cursor-pointer" for="pref-{{ loop.index }}" style="cursor: pointer;">
+              {{ cat }}
+            </label>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-flex justify-content-end align-items-center pt-3 border-top" style="border-color: var(--sl-border) !important;">
+        <button type="submit" class="btn btn-primary-sl px-4 py-2" id="save-pref-btn">
+          <i class="bi bi-check2-circle me-1"></i> Save Preferences
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("preferences-form");
+    const countMsg = document.getElementById("selected-count-msg");
+    const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+
+    function updateCount() {
+      const checked = form.querySelectorAll('input[type="checkbox"]:checked').length;
+      countMsg.textContent = `Selected ${checked} topic(s)`;
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener("change", updateCount));
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const selected = [];
+      form.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => selected.push(cb.value));
+
+      const btn = document.getElementById("save-pref-btn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+      try {
+        const res = await fetch("/api/user/preferences", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categories: selected })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.slToast("Preferences updated successfully!", "success");
+          setTimeout(() => window.location.href = "/dashboard", 700);
+        } else {
+          window.slToast(data.message || "Failed to update preferences.", "error");
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Save Preferences';
+        }
+      } catch (err) {
+        window.slToast("Network error.", "error");
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Save Preferences';
+      }
+    });
+  });
+</script>
+{% endblock %}
